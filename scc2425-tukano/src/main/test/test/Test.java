@@ -59,11 +59,18 @@ public class Test {
 		
 		var blobId = new File( blobUrl.getPath() ).getName();
 		System.out.println( "BlobID:" + blobId );
-		
+
 		var token = blobUrl.getQuery().split("=")[1];
 		
 		blobs.upload(blobUrl.toString(), randomBytes( 100 ), token);
 
+		//---------------TESTING DELETE-----------------
+		System.out.println( "------->" + blobUrl );
+		System.out.println( "DELETING BlobID:" + blobId );
+		Thread.sleep(5000);
+
+		show(blobs.delete(blobId, token));
+		//---------------TESTING DELETE-----------------
 		
 		var s2id = s2.value().getShortId();
 		
@@ -92,6 +99,7 @@ public class Test {
 //		});
 		
 		 show(users.deleteUser("wales", "12345"));
+
 
 		System.exit(0);
 	}
