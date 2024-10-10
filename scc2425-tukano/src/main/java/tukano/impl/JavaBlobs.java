@@ -26,7 +26,7 @@ public class JavaBlobs implements Blobs {
 	
 	private static Blobs instance;
 	private static Logger Log = Logger.getLogger(JavaBlobs.class.getName());
-	private String storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=scc60333;AccountKey=Yu8V03aHeR2V8lEkbyt7NrSWUjKqqHZSKX+PnM7BbaANBgc1z1IX3o/zEDpL1ItaxYmEApUQwzWM+AStTp9s6Q==;EndpointSuffix=core.windows.net";
+	private String storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=scc232460532;AccountKey=40r7/WLBVsMvA3vhBVqpeDuo6xtJjGHBnq+UqslSDcHihx3MM5QXl9NJujJVvk7klEn0ziz+UBKx+AStwNfgYA==;EndpointSuffix=core.windows.net";
 	private BlobContainerClient containerClient;
 
 	public String baseURI;
@@ -56,6 +56,7 @@ public class JavaBlobs implements Blobs {
 
 		//Uploading to the external Azure blob storage service
 		try {
+
 			BinaryData data = BinaryData.fromBytes(bytes);
 
 			// Get client to blob
@@ -119,7 +120,7 @@ public class JavaBlobs implements Blobs {
 
 		try {
 			// Get client to blob
-			BlobClient blob = containerClient.getBlobClient( blobId);
+			BlobClient blob = containerClient.getBlobClient(blobId);
 
 			// Download contents to BinaryData (check documentation for other alternatives)
 			blob.delete();

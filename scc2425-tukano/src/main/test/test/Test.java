@@ -64,12 +64,19 @@ public class Test {
 		
 		blobs.upload(blobUrl.toString(), randomBytes( 100 ), token);
 
+		//--------------TESTING DOWNLOAD
+//		System.out.println( "------->" + blobUrl );
+//		System.out.println( "DOWNLOADING BLOBS BlobID:" + blobId );
+//
+//		show(blobs.download(blobId, token));
+
 		//---------------TESTING DELETE-----------------
 		System.out.println( "------->" + blobUrl );
 		System.out.println( "DELETING BlobID:" + blobId );
 		Thread.sleep(5000);
 
 		show(blobs.delete(blobId, token));
+		System.out.println("PASSAMOS O .delete");
 		//---------------TESTING DELETE-----------------
 		
 		var s2id = s2.value().getShortId();
