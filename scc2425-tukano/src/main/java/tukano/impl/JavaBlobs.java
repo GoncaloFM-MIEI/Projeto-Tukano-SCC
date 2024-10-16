@@ -76,7 +76,6 @@ public class JavaBlobs implements Blobs {
 			return Result.error(INTERNAL_ERROR);
 		}
 
-
 		//return storage.write( toPath( blobId ), bytes);
 	}
 
@@ -139,16 +138,22 @@ public class JavaBlobs implements Blobs {
 	public Result<Void> deleteAllBlobs(String userId, String token) {
 		Log.info(() -> format("deleteAllBlobs : userId = %s, token=%s\n", userId, token));
 
-		if( ! Token.isValid( token, userId ) )
+		if( ! Token.isValid( token, userId ) ) {
+			Log.info(() -> format("No if do token"));
 			return error(FORBIDDEN);
-
+		}
 		try {
 			// Get client to blob
-			PagedIterable<BlobItem> it = containerClient.listBlobs();
+			List<BlobItem> it = containerClient.listBlobs().stream().toList();
+
+			Log.info(() -> format(String.valueOf(it.size())));
 
 			for(BlobItem b : it){
+				Log.info(() -> format("TAMOS NO FOR"));
 				BlobClient blob = containerClient.getBlobClient(b.getName());
-				blob.delete();
+
+				if(b.getName().contains(userId))
+					blob.delete();
 			}
 
 			//blob.delete();
