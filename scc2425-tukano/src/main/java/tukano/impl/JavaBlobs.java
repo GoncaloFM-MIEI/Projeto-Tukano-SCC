@@ -7,13 +7,17 @@ import static tukano.api.Result.ErrorCode.FORBIDDEN;
 import static tukano.api.Result.errorOrResult;
 
 import java.nio.file.Path;
+import java.sql.Blob;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
+import com.azure.core.http.rest.PagedIterable;
 import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobContainerClientBuilder;
+import com.azure.storage.blob.models.BlobItem;
 import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.impl.rest.TukanoRestServer;
@@ -26,7 +30,7 @@ public class JavaBlobs implements Blobs {
 	
 	private static Blobs instance;
 	private static Logger Log = Logger.getLogger(JavaBlobs.class.getName());
-	private String storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=scc232460532;AccountKey=40r7/WLBVsMvA3vhBVqpeDuo6xtJjGHBnq+UqslSDcHihx3MM5QXl9NJujJVvk7klEn0ziz+UBKx+AStwNfgYA==;EndpointSuffix=core.windows.net";
+	private String storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=scc60333;AccountKey=uSsAte+zIBE7ksI9fHdxXTrVCNwDPdU+h3DeJQIDF4kbJNsy/dPheUg2o5bktO34tTYpvthyyIZU+AStbX1y8w==;EndpointSuffix=core.windows.net";
 	private BlobContainerClient containerClient;
 
 	public String baseURI;
@@ -60,7 +64,7 @@ public class JavaBlobs implements Blobs {
 			BinaryData data = BinaryData.fromBytes(bytes);
 
 			// Get client to blob
-			BlobClient blob = containerClient.getBlobClient( blobId);
+			BlobClient blob = containerClient.getBlobClient(toPath(blobId));
 
 			// Upload contents from BinaryData (check documentation for other alternatives)
 			blob.upload(data);
@@ -85,7 +89,7 @@ public class JavaBlobs implements Blobs {
 
 		try {
 			// Get client to blob
-			BlobClient blob = containerClient.getBlobClient( blobId);
+			BlobClient blob = containerClient.getBlobClient( toPath(blobId));
 
 			// Download contents to BinaryData (check documentation for other alternatives)
 			BinaryData data = blob.downloadContent();
@@ -120,9 +124,8 @@ public class JavaBlobs implements Blobs {
 
 		try {
 			// Get client to blob
-			BlobClient blob = containerClient.getBlobClient(blobId);
+			BlobClient blob = containerClient.getBlobClient(toPath(blobId));
 
-			// Download contents to BinaryData (check documentation for other alternatives)
 			blob.delete();
 
 			return Result.ok();
@@ -138,8 +141,25 @@ public class JavaBlobs implements Blobs {
 
 		if( ! Token.isValid( token, userId ) )
 			return error(FORBIDDEN);
-		
-		return storage.delete( toPath(userId));
+
+		try {
+			// Get client to blob
+			PagedIterable<BlobItem> it = containerClient.listBlobs();
+
+			for(BlobItem b : it){
+				BlobClient blob = containerClient.getBlobClient(b.getName());
+				blob.delete();
+			}
+
+			//blob.delete();
+
+			return Result.ok();
+		} catch( Exception e) {
+			e.printStackTrace();
+			return Result.error(INTERNAL_ERROR);
+		}
+
+		//return storage.delete( toPath(userId));
 	}
 	
 	private boolean validBlobId(String blobId, String token) {		

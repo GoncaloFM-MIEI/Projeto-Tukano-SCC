@@ -11,6 +11,7 @@ import tukano.clients.rest.RestBlobsClient;
 import tukano.clients.rest.RestShortsClient;
 import tukano.clients.rest.RestUsersClient;
 import tukano.impl.rest.TukanoRestServer;
+import tukano.impl.Token;
 
 public class Test {
 	
@@ -71,12 +72,12 @@ public class Test {
 		show(blobs.download(blobUrl.toString(), token));
 
 		//---------------TESTING DELETE-----------------
-		System.out.println( "------->" + blobUrl );
-		System.out.println( "DELETING BlobID:" + blobId );
-		Thread.sleep(5000);
+		//System.out.println( "------->" + blobUrl );
+		//System.out.println( "DELETING BlobID:" + blobId );
+		//Thread.sleep(5000);
 
-		show(blobs.delete(blobUrl.toString(), token));
-		System.out.println("PASSAMOS O .delete");
+		//show(blobs.delete(blobUrl.toString(), token));
+		//System.out.println("PASSAMOS O .delete");
 		//---------------TESTING DELETE-----------------
 		
 		var s2id = s2.value().getShortId();
@@ -105,8 +106,8 @@ public class Test {
 //			
 //		});
 		
-		 show(users.deleteUser("wales", "12345"));
-
+		 show(users.deleteUser("liskov", "54321"));
+		 //show(blobs.deleteAllBlobs("liskov", Token.get("liskov")));
 
 		System.exit(0);
 	}
