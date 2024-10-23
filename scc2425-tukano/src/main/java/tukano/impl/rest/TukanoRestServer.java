@@ -33,9 +33,15 @@ public class TukanoRestServer extends Application {
 	}
 	
 	protected TukanoRestServer() {
-		resources.add(RestBlobsResource.class);
 		resources.add(RestUsersResource.class);
 		resources.add(RestShortsResource.class);
+		resources.add(RestBlobsResource.class);
+
+//		singletons.add(new RestUsersResource());
+//		singletons.add(new RestShortsResource());
+//		singletons.add(new RestBlobsResource());
+
+
 //		serverURI = String.format(SERVER_BASE_URI, IP.hostname(), PORT);
 	}
 
