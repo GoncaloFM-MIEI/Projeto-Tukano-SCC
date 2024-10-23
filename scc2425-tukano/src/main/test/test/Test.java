@@ -36,7 +36,7 @@ public class Test {
 		var blobs = new RestBlobsClient(serverURI);
 		var users = new RestUsersClient( serverURI);
 		var shorts = new RestShortsClient(serverURI);
-				
+
 		 show(users.createUser( new User("wales", "12345", "jimmy@wikipedia.pt", "Jimmy Wales") ));
 		 
 		 show(users.createUser( new User("liskov", "54321", "liskov@mit.edu", "Barbara Liskov") ));

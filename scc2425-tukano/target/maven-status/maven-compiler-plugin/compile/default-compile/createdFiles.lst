@@ -7,6 +7,7 @@ tukano\impl\rest\utils\CustomLoggingFilter.class
 utils\Random.class
 utils\TLS.class
 tukano\impl\rest\RestResource.class
+utils\CosmosDBLayer.class
 tukano\api\Users.class
 tukano\impl\JavaShorts.class
 tukano\impl\JavaBlobs.class
@@ -30,6 +31,7 @@ utils\Args.class
 utils\IP.class
 tukano\impl\rest\RestBlobsResource.class
 tukano\clients\rest\RestShortsClient$2.class
+tukano\api\UserDAO.class
 utils\Queues.class
 tukano\api\rest\RestShorts.class
 tukano\api\Result$ErrorCode.class

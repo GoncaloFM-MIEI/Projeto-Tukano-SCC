@@ -16,6 +16,7 @@ import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
 import utils.DB;
+import utils.CosmosDBLayer;
 
 public class JavaUsers implements Users {
 	
@@ -29,16 +30,16 @@ public class JavaUsers implements Users {
 		return instance;
 	}
 	
-	private JavaUsers() {}
+	private JavaUsers() {
+	}
 	
 	@Override
 	public Result<String> createUser(User user) {
 		Log.info(() -> format("createUser : %s\n", user));
-
 		if( badUserInfo( user ) )
 				return error(BAD_REQUEST);
-
-		return errorOrValue( DB.insertOne( user), user.getUserId() );
+		CosmosDBLayer cosmos = CosmosDBLayer.getInstance();
+		return errorOrValue( cosmos.insertOne(user), user.getUserId() );
 	}
 
 	@Override
