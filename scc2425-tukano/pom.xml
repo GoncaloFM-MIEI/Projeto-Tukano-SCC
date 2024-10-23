@@ -5,6 +5,7 @@
 	<groupId>scc2425</groupId>
 	<artifactId>tukano</artifactId>
 	<version>1</version>
+	<packaging>war</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<authors>xxxxx-xxxxx</authors>
@@ -19,6 +20,40 @@
 					<release>17</release>
 				</configuration>
 			</plugin>
+			<plugin>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>3.4.0</version>
+				<configuration>
+					<warSourceDirectory>${project.basedir}/src/main/webapp</warSourceDirectory>
+				</configuration>
+			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>com.microsoft.azure</groupId>-->
+<!--				<artifactId>azure-webapp-maven-plugin</artifactId>-->
+<!--				<version>2.13.0</version>-->
+<!--				<configuration>-->
+<!--					<schemaVersion>V2</schemaVersion>-->
+<!--					<pricingTier>F1</pricingTier>-->
+<!--					<region>westeurope</region>-->
+<!--					<runtime>-->
+<!--						<os>linux</os>-->
+<!--						<javaVersion>Java 17</javaVersion>-->
+<!--						<webContainer>Tomcat 10.0</webContainer>-->
+<!--					</runtime>-->
+<!--					<deployment>-->
+<!--						<resources>-->
+<!--							<resource>-->
+<!--								<directory>${project.basedir}/target</directory>-->
+<!--								<includes>-->
+<!--									<include>*.war</include>-->
+<!--								</includes>-->
+<!--							</resource>-->
+<!--						</resources>-->
+<!--					</deployment>-->
+<!--					<resourceGroup>scc-backend-rg-smd</resourceGroup>-->
+<!--					<appName>scc-backend-smd</appName>-->
+<!--				</configuration>-->
+<!--			</plugin>-->
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
@@ -35,12 +70,25 @@
 				<configuration>
 					<images>
 						<image>
-							<name>smduarte/${project.artifactId}</name>
+							<name>${authors}/${project.artifactId}</name>
 							<build>
 								<dockerFile>${project.basedir}/Dockerfile</dockerFile>
 							</build>
 						</image>
 					</images>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.tomcat.maven</groupId>
+				<artifactId>tomcat7-maven-plugin</artifactId>
+				<version>2.1</version>
+				<configuration>
+					<url>http://maven:s3cret@127.0.0.1:8080/manager/text</url>
+					<server>tomcat-docker</server>
+					<update>true</update>
+					<path>/tukano</path>
+					<username>maven</username>
+					<password>s3cret</password>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -38,7 +38,6 @@ tukano\impl\data\Likes.class
 utils\TryCatch.class
 utils\Hex.class
 tukano\api\rest\RestBlobs.class
-test\Test.class
 utils\IO.class
 tukano\impl\storage\FilesystemStorage.class
 tukano\api\ErrorResult.class
