@@ -9,9 +9,11 @@ import static tukano.api.Result.ErrorCode.BAD_REQUEST;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
@@ -23,22 +25,28 @@ public class JavaUsers implements Users {
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
 	private static Users instance;
+
+	private CosmosDBLayer cosmos;
 	
 	synchronized public static Users getInstance() {
 		if( instance == null )
 			instance = new JavaUsers();
+
 		return instance;
 	}
 	
 	private JavaUsers() {
+		cosmos = CosmosDBLayer.getInstance(Users.NAME);
 	}
 	
 	@Override
 	public Result<String> createUser(User user) {
+
 		Log.info(() -> format("createUser : %s\n", user));
-		if( badUserInfo( user ) )
-				return error(BAD_REQUEST);
-		CosmosDBLayer cosmos = CosmosDBLayer.getInstance();
+		if( badUserInfo( user ) ) {
+			return error(BAD_REQUEST);
+		}
+		Locale.setDefault(Locale.US);
 		return errorOrValue( cosmos.insertOne(user), user.getUserId() );
 	}
 
@@ -49,7 +57,7 @@ public class JavaUsers implements Users {
 		if (userId == null)
 			return error(BAD_REQUEST);
 		
-		return validatedUserOrError( DB.getOne( userId, User.class), pwd);
+		return validatedUserOrError( cosmos.getOne( userId, User.class), pwd);
 	}
 
 	@Override
@@ -59,7 +67,7 @@ public class JavaUsers implements Users {
 		if (badUpdateUserInfo(userId, pwd, other))
 			return error(BAD_REQUEST);
 
-		return errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), pwd), user -> DB.updateOne( user.updateFrom(other)));
+		return errorOrResult( validatedUserOrError(cosmos.getOne( userId, User.class), pwd), user -> cosmos.updateOne( user.updateFrom(other)));
 	}
 
 	@Override
@@ -69,15 +77,23 @@ public class JavaUsers implements Users {
 		if (userId == null || pwd == null )
 			return error(BAD_REQUEST);
 
-		return errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), pwd), user -> {
+		Result<User> res = cosmos.getOne(userId, User.class);
+
+		//TODO ESCLARECER A SITUACÂO DO RETURN
+		return errorOrResult( validatedUserOrError(res, pwd), user -> {
 
 			// Delete user shorts and related info asynchronously in a separate thread
 			Executors.defaultThreadFactory().newThread( () -> {
 				JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
 				JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
 			}).start();
-			
-			return DB.deleteOne( user);
+
+			//Result<User> res = cosmos.getOne(userId, User.class);
+			cosmos.deleteOne(user);
+
+			//	cosmos.getOne( userId, User.class);
+
+			return res;
 		});
 	}
 
@@ -85,13 +101,14 @@ public class JavaUsers implements Users {
 	public Result<List<User>> searchUsers(String pattern) {
 		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
 
-		var query = format("SELECT * FROM User u WHERE UPPER(u.userId) LIKE '%%%s%%'", pattern.toUpperCase());
-		var hits = DB.sql(query, User.class)
-				.stream()
-				.map(User::copyWithoutPassword)
-				.toList();
+		//TODO TEMOS MESMO QUE TER O .TOUPPSERCASE() no patter? Não funciona com ele :)
+		var query = format("SELECT * FROM users u WHERE u.id LIKE '%%%s%%'", pattern);
+		var hits = cosmos.query(User.class, query);
+				//.stream()
+				//.map(User::copyWithoutPassword)
+				//.toList();
 
-		return ok(hits);
+		return ok(hits.value().stream().toList());
 	}
 
 	

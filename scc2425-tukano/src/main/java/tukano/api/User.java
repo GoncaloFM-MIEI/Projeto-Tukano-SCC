@@ -1,5 +1,6 @@
 package tukano.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import org.hibernate.annotations.PartitionKey;
@@ -7,7 +8,8 @@ import org.hibernate.annotations.PartitionKey;
 
 public class User {
 
-	private String id;
+	@JsonProperty("id")
+	private String userId;
 	private String pwd;
 	private String email;	
 	private String displayName;
@@ -15,17 +17,17 @@ public class User {
 	public User() {}
 	
 	public User(String id, String pwd, String email, String displayName) {
+		this.userId = id;
 		this.pwd = pwd;
 		this.email = email;
-		this.id = id;
 		this.displayName = displayName;
 	}
 
 	public String getUserId() {
-		return id;
+		return userId;
 	}
 	public void setUserId(String id) {
-		this.id = id;
+		this.userId = id;
 	}
 	public String getPwd() {
 		return pwd;
@@ -47,7 +49,7 @@ public class User {
 	}
 	
 	public String userId() {
-		return id;
+		return userId;
 	}
 	
 	public String pwd() {
@@ -64,15 +66,15 @@ public class User {
 	
 	@Override
 	public String toString() {
-		return "User [userId=" + id + ", pwd=" + pwd + ", email=" + email + ", displayName=" + displayName + "]";
+		return "User [id=" + userId + ", pwd=" + pwd + ", email=" + email + ", displayName=" + displayName + "]";
 	}
 	
 	public User copyWithoutPassword() {
-		return new User(id, "", email, displayName);
+		return new User(userId, "", email, displayName);
 	}
 	
 	public User updateFrom( User other ) {
-		return new User( id,
+		return new User( userId,
 				other.pwd != null ? other.pwd : pwd,
 				other.email != null ? other.email : email, 
 				other.displayName != null ? other.displayName : displayName);

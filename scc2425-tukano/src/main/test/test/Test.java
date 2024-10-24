@@ -40,8 +40,10 @@ public class Test {
 		 show(users.createUser( new User("wales", "12345", "jimmy@wikipedia.pt", "Jimmy Wales") ));
 		 
 		 show(users.createUser( new User("liskov", "54321", "liskov@mit.edu", "Barbara Liskov") ));
+
+		 show(users.createUser( new User("liskov123", "54321", "liskov@mit.edu", "Barbara Liskov") ));
 		 
-		 show(users.updateUser("wales", "12345", new User("wales", "12345", "jimmy@wikipedia.com", "" ) ));
+		 show(users.updateUser("wales", "12345", new User("wales", "12345", "jimmy@gmail.com", "" ) ));
 		 
 		 
 		 show(users.searchUsers(""));
@@ -49,7 +51,7 @@ public class Test {
 		
 		Result<tukano.api.Short> s1, s2;
 
-		show(s2 = shorts.createShort("liskov", "54321"));		
+		show(s2 = shorts.createShort("liskov", "54321"));
 		show(s1 = shorts.createShort("wales", "12345"));
 		show(shorts.createShort("wales", "12345"));
 		show(shorts.createShort("wales", "12345"));
@@ -105,9 +107,11 @@ public class Test {
 //			System.out.println( Hex.of(Hash.sha256( bytes )) + "-->" + Hex.of(Hash.sha256( r.value() )));
 //			
 //		});
-		
-		 show(users.deleteUser("liskov", "54321"));
-		 //show(blobs.deleteAllBlobs("liskov", Token.get("liskov")));
+
+		show(users.updateUser("wales","12345", new User("wales", "12345", "jimmy@marco.pt", "Jimmy Wales")));
+		show(users.searchUsers("lis"));
+	 	show(users.deleteUser("liskov", "54321"));
+	 	//show(blobs.deleteAllBlobs("liskov", Token.get("liskov")));
 
 		System.exit(0);
 	}

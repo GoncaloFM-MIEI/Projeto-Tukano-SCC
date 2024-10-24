@@ -15,16 +15,18 @@ import java.util.logging.Logger;
 public class CosmosDBLayer {
 	private static Logger Log = Logger.getLogger(CosmosDBLayer.class.getName());
 
-	private static final String CONNECTION_URL = "https://cosmos-lab3-60333.documents.azure.com:443/"; // replace with your own
-	private static final String DB_KEY = "blZUAFYJUneEMCCK7s6aKI0L6Ot51LMC7XQ2DK2wlnHuufSPF4LzescQOQjTSkhgTn0HQqLwj4e8ACDbYtQ6zQ==";
+	private static final String CONNECTION_URL = "https://cosmos60333.documents.azure.com:443/"; // replace with your own
+	private static final String DB_KEY = "lBZrrH8QN5P8PiSRLax1lSuzDDKndHjiyUa1p2Zj5Aro1jvSPVbOoyiVtej3ZGvOcxOQKaMqeFYzACDbROQBBg==";
 	private static final String DB_NAME = "tukano60333";
-	private static final String CONTAINER = "users";
+	private static String containerName;
 
 	private static CosmosDBLayer instance;
 
-	public static synchronized CosmosDBLayer getInstance() {
+	public static synchronized CosmosDBLayer getInstance(String container) {
 		if( instance != null)
 			return instance;
+
+		containerName = container;
 
 		CosmosClient client = new CosmosClientBuilder()
 		         .endpoint(CONNECTION_URL)
@@ -53,7 +55,7 @@ public class CosmosDBLayer {
 		if( db != null)
 			return;
 		db = client.getDatabase(DB_NAME);
-		container = db.getContainer(CONTAINER);
+		container = db.getContainer(containerName);
 	}
 
 	public void close() {
@@ -88,7 +90,7 @@ public class CosmosDBLayer {
 			init();
 			return Result.ok(supplierFunc.get());
 		} catch( CosmosException ce ) {
-			//ce.printStackTrace();
+			ce.printStackTrace();
 			return Result.error ( errorCodeFromStatus(ce.getStatusCode() ));
 		} catch( Exception x ) {
 			x.printStackTrace();

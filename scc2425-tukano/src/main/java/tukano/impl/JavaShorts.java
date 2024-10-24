@@ -22,6 +22,7 @@ import tukano.api.User;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
 import tukano.impl.rest.TukanoRestServer;
+import utils.CosmosDBLayer;
 import utils.DB;
 
 public class JavaShorts implements Shorts {
@@ -29,14 +30,19 @@ public class JavaShorts implements Shorts {
 	private static Logger Log = Logger.getLogger(JavaShorts.class.getName());
 	
 	private static Shorts instance;
+
+	private CosmosDBLayer cosmos;
 	
 	synchronized public static Shorts getInstance() {
 		if( instance == null )
 			instance = new JavaShorts();
+
 		return instance;
 	}
 	
-	private JavaShorts() {}
+	private JavaShorts() {
+		cosmos = CosmosDBLayer.getInstance(Shorts.NAME);
+	}
 	
 	
 	@Override
@@ -49,7 +55,7 @@ public class JavaShorts implements Shorts {
 			var blobUrl = format("%s/%s/%s", TukanoRestServer.serverURI, Blobs.NAME, shortId); 
 			var shrt = new Short(shortId, userId, blobUrl);
 
-			return errorOrValue(DB.insertOne(shrt), s -> s.copyWithLikes_And_Token(0));
+			return errorOrValue(cosmos.insertOne(shrt), s -> s.copyWithLikes_And_Token(0));
 		});
 	}
 
@@ -71,7 +77,6 @@ public class JavaShorts implements Shorts {
 		Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
 		
 		return errorOrResult( getShort(shortId), shrt -> {
-			
 			return errorOrResult( okUser( shrt.getOwnerId(), password), user -> {
 				return DB.transaction( hibernate -> {
 
