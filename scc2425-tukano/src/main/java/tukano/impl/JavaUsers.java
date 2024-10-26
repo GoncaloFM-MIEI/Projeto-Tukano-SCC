@@ -13,10 +13,12 @@ import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
+import com.azure.cosmos.CosmosContainer;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
+import tukano.impl.data.UserDAO;
 import utils.DB;
 import utils.CosmosDBLayer;
 
@@ -26,19 +28,24 @@ public class JavaUsers implements Users {
 
 	private static Users instance;
 
-	private CosmosDBLayer cosmos;
+	private static CosmosDBLayer cosmos;
+
+	private static CosmosContainer usersContainer;
 	
 	synchronized public static Users getInstance() {
 		if( instance == null )
 			instance = new JavaUsers();
-
+		cosmos = CosmosDBLayer.getInstance();
+		usersContainer = cosmos.getDB().getContainer(Users.NAME);
 		return instance;
 	}
 	
 	private JavaUsers() {
-		cosmos = CosmosDBLayer.getInstance(Users.NAME);
+		
 	}
-	
+
+
+
 	@Override
 	public Result<String> createUser(User user) {
 
@@ -47,7 +54,7 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 		}
 		Locale.setDefault(Locale.US);
-		return errorOrValue( cosmos.insertOne(user), user.getUserId() );
+		return errorOrValue( cosmos.insertOne(user, usersContainer), user.getUserId() );
 	}
 
 	@Override
@@ -57,7 +64,7 @@ public class JavaUsers implements Users {
 		if (userId == null)
 			return error(BAD_REQUEST);
 		
-		return validatedUserOrError( cosmos.getOne( userId, User.class), pwd);
+		return validatedUserOrError( cosmos.getOne( userId, User.class, usersContainer), pwd);
 	}
 
 	@Override
@@ -67,7 +74,7 @@ public class JavaUsers implements Users {
 		if (badUpdateUserInfo(userId, pwd, other))
 			return error(BAD_REQUEST);
 
-		return errorOrResult( validatedUserOrError(cosmos.getOne( userId, User.class), pwd), user -> cosmos.updateOne( user.updateFrom(other)));
+		return errorOrResult( validatedUserOrError(cosmos.getOne( userId, User.class, usersContainer), pwd), user -> cosmos.updateOne( user.updateFrom(other), usersContainer));
 	}
 
 	@Override
@@ -77,7 +84,7 @@ public class JavaUsers implements Users {
 		if (userId == null || pwd == null )
 			return error(BAD_REQUEST);
 
-		Result<User> res = cosmos.getOne(userId, User.class);
+		Result<User> res = cosmos.getOne(userId, User.class, usersContainer);
 
 		//TODO ESCLARECER A SITUACÂO DO RETURN
 		return errorOrResult( validatedUserOrError(res, pwd), user -> {
@@ -89,7 +96,7 @@ public class JavaUsers implements Users {
 			}).start();
 
 			//Result<User> res = cosmos.getOne(userId, User.class);
-			cosmos.deleteOne(user);
+			cosmos.deleteOne(user, usersContainer);
 
 			//	cosmos.getOne( userId, User.class);
 
@@ -103,7 +110,7 @@ public class JavaUsers implements Users {
 
 		//TODO TEMOS MESMO QUE TER O .TOUPPSERCASE() no patter? Não funciona com ele :)
 		var query = format("SELECT * FROM users u WHERE u.id LIKE '%%%s%%'", pattern);
-		var hits = cosmos.query(User.class, query);
+		var hits = cosmos.query(User.class, query, usersContainer);
 				//.stream()
 				//.map(User::copyWithoutPassword)
 				//.toList();

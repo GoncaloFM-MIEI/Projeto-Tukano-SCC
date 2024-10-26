@@ -100,6 +100,8 @@ public class Test {
 		show(shorts.getFeed("liskov", "12345"));
 
 		show(shorts.getShort( s2id ));
+
+		show(shorts.deleteShort(s2id, "54321"));
 //
 //		
 //		blobs.forEach( b -> {

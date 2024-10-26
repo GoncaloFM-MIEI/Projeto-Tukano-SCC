@@ -11,23 +11,24 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
+import static java.lang.String.format;
+
 
 public class CosmosDBLayer {
 	private static Logger Log = Logger.getLogger(CosmosDBLayer.class.getName());
 
 	private static final String CONNECTION_URL = "https://cosmos60333.documents.azure.com:443/"; // replace with your own
-	private static final String DB_KEY = "lBZrrH8QN5P8PiSRLax1lSuzDDKndHjiyUa1p2Zj5Aro1jvSPVbOoyiVtej3ZGvOcxOQKaMqeFYzACDbROQBBg==";
+	private static final String DB_KEY = "VQqxfhtmRQ8cBaJyxlUbhhU2YcZssqTlwYd4bPpkttFVJJAyLg2Bo130ziNA4T3UFGpO5cNTJLUXACDbeWYa7Q==";
 	private static final String DB_NAME = "tukano60333";
 	private static String containerName;
 
 	private static CosmosDBLayer instance;
 
-	public static synchronized CosmosDBLayer getInstance(String container) {
-		if( instance != null)
-			return instance;
+	public static synchronized CosmosDBLayer getInstance() {
+		//if( instance != null && containerName.equals(container))
+		//	return instance;
 
-		containerName = container;
-
+		//containerName = container;
 		CosmosClient client = new CosmosClientBuilder()
 		         .endpoint(CONNECTION_URL)
 		         .key(DB_KEY)
@@ -45,7 +46,7 @@ public class CosmosDBLayer {
 
 	private CosmosClient client;
 	private CosmosDatabase db;
-	private CosmosContainer container;
+	//private CosmosContainer container;
 
 	public CosmosDBLayer(CosmosClient client) {
 		this.client = client;
@@ -55,30 +56,34 @@ public class CosmosDBLayer {
 		if( db != null)
 			return;
 		db = client.getDatabase(DB_NAME);
-		container = db.getContainer(containerName);
+		//container = db.getContainer(containerName);
 	}
 
 	public void close() {
 		client.close();
 	}
 
-	public <T> Result<T> getOne(String id, Class<T> clazz) {
+	public CosmosDatabase getDB() {
+		return tryCatch( () -> this.db).value();
+	}
+
+	public <T> Result<T> getOne(String id, Class<T> clazz, CosmosContainer container) {
 		return tryCatch( () -> container.readItem(id, new PartitionKey(id), clazz).getItem());
 	}
 
-	public <T> Result<?> deleteOne(T obj) {
+	public <T> Result<?> deleteOne(T obj, CosmosContainer container) {
 		return tryCatch( () -> container.deleteItem(obj, new CosmosItemRequestOptions()).getItem());
 	}
 
-	public <T> Result<T> updateOne(T obj) {
+	public <T> Result<T> updateOne(T obj, CosmosContainer container) {
 		return tryCatch( () -> container.upsertItem(obj).getItem());
 	}
 
-	public <T> Result<T> insertOne( T obj) {
+	public <T> Result<T> insertOne( T obj, CosmosContainer container) {
 		return tryCatch( () -> container.createItem(obj).getItem());
 	}
 
-	public <T> Result<List<T>> query(Class<T> clazz, String queryStr) {
+	public <T> Result<List<T>> query(Class<T> clazz, String queryStr, CosmosContainer container) {
 		return tryCatch(() -> {
 			var res = container.queryItems(queryStr, new CosmosQueryRequestOptions(), clazz);
 			return res.stream().toList();

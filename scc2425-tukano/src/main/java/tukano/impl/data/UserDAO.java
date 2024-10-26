@@ -1,4 +1,6 @@
-package tukano.api;
+package tukano.impl.data;
+
+import tukano.api.User;
 
 /**
  * Represents a User, as stored in the database
