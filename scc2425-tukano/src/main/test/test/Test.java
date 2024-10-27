@@ -34,21 +34,21 @@ public class Test {
 		var serverURI = String.format("http://localhost:%s/rest", TukanoRestServer.PORT);
 		
 		var blobs = new RestBlobsClient(serverURI);
-		var users = new RestUsersClient( serverURI);
+		var users = new RestUsersClient(serverURI);
 		var shorts = new RestShortsClient(serverURI);
 
-		 show(users.createUser( new User("wales", "12345", "jimmy@wikipedia.pt", "Jimmy Wales") ));
-		 
-		 show(users.createUser( new User("liskov", "54321", "liskov@mit.edu", "Barbara Liskov") ));
+		//TODO Users operations test
+//		show(users.createUser( new User("wales", "12345", "wjimmy@wikipedia.pt", "Jimmy Wales") ));
+//		show(users.createUser( new User("liskov", "54321", "liskov@mit.edu", "Barbara Liskov") ));
+//		show(users.createUser( new User("liskov123", "54321", "liskov@mit.edu", "Barbara Liskov") ));
+//		show(users.getUser("liskov", "54321"));
+//		show(users.updateUser("wales", "12345", new User("wales", "12345", "jimmy@gmail.com", "" ) ));
+//		show(users.deleteUser("liskov123", "54321"));
+//		show(users.searchUsers(""));
+//		show(users.searchUsers("wal"));
 
-		 show(users.createUser( new User("liskov123", "54321", "liskov@mit.edu", "Barbara Liskov") ));
-		 
-		 show(users.updateUser("wales", "12345", new User("wales", "12345", "jimmy@gmail.com", "" ) ));
-		 
-		 
-		 show(users.searchUsers(""));
-		
-		
+
+		//TODO Shorts operations test
 		Result<tukano.api.Short> s1, s2;
 
 		show(s2 = shorts.createShort("liskov", "54321"));
@@ -57,21 +57,30 @@ public class Test {
 		show(shorts.createShort("wales", "12345"));
 		show(shorts.createShort("wales", "12345"));
 
-		var blobUrl = URI.create(s2.value().getBlobUrl());
-		System.out.println( "------->" + blobUrl );
-		
-		var blobId = new File( blobUrl.getPath() ).getName();
-		System.out.println( "BlobID:" + blobId );
+		var s1id = s1.value().getShortId();
+		var s2id = s2.value().getShortId();
+		show(shorts.getShort(s1id));
 
-		var token = blobUrl.getQuery().split("=")[1];
-		
-		blobs.upload(blobUrl.toString(), randomBytes( 100 ), token);
+//		show(shorts.deleteShort(s2id, "54321"));
 
-		//--------------TESTING DOWNLOAD
-		System.out.println( "------->" + blobUrl );
-		System.out.println( "DOWNLOADING BLOBS BlobID:" + blobId );
+		show(shorts.getShorts( "wales" ));
 
-		show(blobs.download(blobUrl.toString(), token));
+
+//		var blobUrl = URI.create(s2.value().getBlobUrl());
+//		System.out.println( "------->" + blobUrl );
+//
+//		var blobId = new File( blobUrl.getPath() ).getName();
+//		System.out.println( "BlobID:" + blobId );
+//
+//		var token = blobUrl.getQuery().split("=")[1];
+//
+//		blobs.upload(blobUrl.toString(), randomBytes( 100 ), token);
+//
+//		//--------------TESTING DOWNLOAD
+//		System.out.println( "------->" + blobUrl );
+//		System.out.println( "DOWNLOADING BLOBS BlobID:" + blobId );
+//
+//		show(blobs.download(blobUrl.toString(), token));
 
 		//---------------TESTING DELETE-----------------
 		//System.out.println( "------->" + blobUrl );
@@ -82,27 +91,29 @@ public class Test {
 		//System.out.println("PASSAMOS O .delete");
 		//---------------TESTING DELETE-----------------
 		
-		var s2id = s2.value().getShortId();
-		
+//		var s2id = s2.value().getShortId();
+//
 		show(shorts.follow("liskov", "wales", true, "54321"));
+		show(shorts.follow("wales", "liskov", true, "12345"));
 		show(shorts.followers("wales", "12345"));
-		
-		show(shorts.like(s2id, "liskov", true, "54321"));
+
+		show(shorts.like(s2id, "wales", true, "12345"));
 		show(shorts.like(s2id, "liskov", true, "54321"));
 		show(shorts.likes(s2id , "54321"));
+
+		show(shorts.getShort(s2id));
 		show(shorts.getFeed("liskov", "12345"));
-		show(shorts.getShort( s2id ));
-		
-		show(shorts.getShorts( "wales" ));
-		
-		show(shorts.followers("wales", "12345"));
-
-		show(shorts.getFeed("liskov", "12345"));
-
-		show(shorts.getShort( s2id ));
-
-		show(shorts.deleteShort(s2id, "54321"));
+//		show(shorts.getShort( s2id ));
 //
+//
+//		show(shorts.followers("wales", "12345"));
+//
+//		show(shorts.getFeed("liskov", "12345"));
+//
+//		show(shorts.getShort( s2id ));
+//
+//		show(shorts.deleteShort(s2id, "54321"));
+////
 //		
 //		blobs.forEach( b -> {
 //			var r = b.download(blobId);
@@ -110,9 +121,9 @@ public class Test {
 //			
 //		});
 
-		show(users.updateUser("wales","12345", new User("wales", "12345", "jimmy@marco.pt", "Jimmy Wales")));
-		show(users.searchUsers("lis"));
-	 	show(users.deleteUser("liskov", "54321"));
+//		show(users.updateUser("wales","12345", new User("wales", "12345", "jimmy@marco.pt", "Jimmy Wales")));
+//		show(users.searchUsers("lis"));
+//	 	show(users.deleteUser("liskov", "54321"));
 	 	//show(blobs.deleteAllBlobs("liskov", Token.get("liskov")));
 
 		System.exit(0);

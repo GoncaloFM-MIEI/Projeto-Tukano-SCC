@@ -17,9 +17,9 @@ import static java.lang.String.format;
 public class CosmosDBLayer {
 	private static Logger Log = Logger.getLogger(CosmosDBLayer.class.getName());
 
-	private static final String CONNECTION_URL = "https://cosmos60333.documents.azure.com:443/"; // replace with your own
-	private static final String DB_KEY = "VQqxfhtmRQ8cBaJyxlUbhhU2YcZssqTlwYd4bPpkttFVJJAyLg2Bo130ziNA4T3UFGpO5cNTJLUXACDbeWYa7Q==";
-	private static final String DB_NAME = "tukano60333";
+	private static final String CONNECTION_URL = "https://cosmos60532.documents.azure.com:443/"; // replace with your own
+	private static final String DB_KEY = "uhf1xlcPR0y5aimX6LoWb4WVOK0lnt1DIV5CgdphPdXhLLE2waB2fsWxrrd1KOb1zXbFyQnplZGlACDbQnbFxQ==";
+	private static final String DB_NAME = "tukano60532";
 	private static String containerName;
 
 	private static CosmosDBLayer instance;

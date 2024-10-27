@@ -35,13 +35,13 @@ public class JavaUsers implements Users {
 	synchronized public static Users getInstance() {
 		if( instance == null )
 			instance = new JavaUsers();
-		cosmos = CosmosDBLayer.getInstance();
-		usersContainer = cosmos.getDB().getContainer(Users.NAME);
+
 		return instance;
 	}
 	
 	private JavaUsers() {
-		
+		cosmos = CosmosDBLayer.getInstance();
+		usersContainer = cosmos.getDB().getContainer(Users.NAME);
 	}
 
 

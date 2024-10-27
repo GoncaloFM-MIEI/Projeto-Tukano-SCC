@@ -1,6 +1,7 @@
 package tukano.impl.data;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
@@ -10,6 +11,8 @@ import jakarta.persistence.Id;
 public class Following{
 
 	@JsonProperty("id")
+	String id;
+
 	String follower;
 	
 	@Id 
@@ -21,6 +24,7 @@ public class Following{
 		super();
 		this.follower = follower;
 		this.followee = followee;
+		id = follower + "_" + followee;
 	}
 
 	public String getFollower() {

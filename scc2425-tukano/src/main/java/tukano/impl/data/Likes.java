@@ -1,6 +1,7 @@
 package tukano.impl.data;
 
 import java.util.Objects;
+import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
@@ -10,6 +11,8 @@ import jakarta.persistence.Id;
 public class Likes {
 	
 	@JsonProperty("id")
+	String id;
+
 	String userId;
 	
 	@Id 
@@ -31,6 +34,7 @@ public class Likes {
 		this.userId = userId;
 		this.shortId = shortId;
 		this.ownerId = ownerId;
+		id = userId + "_" + shortId;
 	}
 
 	public String getUserId() {

@@ -1,5 +1,6 @@
 utils\Sleep.class
 tukano\clients\rest\RestUsersClient.class
+utils\Tuple.class
 tukano\impl\rest\RestResource$1.class
 tukano\impl\Token.class
 tukano\clients\rest\RestClient.class
@@ -17,11 +18,14 @@ tukano\impl\JavaUsers.class
 utils\DB.class
 tukano\clients\rest\RestShortsClient$3.class
 tukano\impl\rest\TukanoRestServer.class
+tukano\impl\data\UserDAO.class
+tukano\impl\data\LikesDAO.class
 tukano\clients\rest\RestShortsClient.class
 utils\Hibernate.class
 tukano\impl\storage\BlobStorage.class
 tukano\api\OkResult.class
 tukano\api\Shorts.class
+tukano\impl\data\FollowingDAO.class
 tukano\impl\rest\utils\GenericExceptionMapper.class
 tukano\api\Blobs.class
 tukano\api\Result.class
@@ -31,7 +35,6 @@ utils\Args.class
 utils\IP.class
 tukano\impl\rest\RestBlobsResource.class
 tukano\clients\rest\RestShortsClient$2.class
-tukano\api\UserDAO.class
 utils\Queues.class
 tukano\api\rest\RestShorts.class
 tukano\api\Result$ErrorCode.class

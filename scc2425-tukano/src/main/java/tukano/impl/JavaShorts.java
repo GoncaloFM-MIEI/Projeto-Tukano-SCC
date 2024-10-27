@@ -9,12 +9,15 @@ import static tukano.api.Result.errorOrVoid;
 import static tukano.api.Result.ok;
 import static utils.DB.getOne;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosException;
+import org.checkerframework.checker.units.qual.A;
+import utils.Tuple;
+import reactor.util.function.Tuple2;
 import tukano.api.Blobs;
 import tukano.api.Result;
 import tukano.api.Short;
@@ -78,12 +81,14 @@ public class JavaShorts implements Shorts {
 		if( shortId == null )
 			return error(BAD_REQUEST);
 
-		var query = format("SELECT count(*) FROM Likes l WHERE l.shortId = '%s'", shortId);
-		var likes = cosmos.query(Long.class, query, likesContainer);
-		return errorOrValue( cosmos.getOne(shortId, Short.class, shortsContainer), shrt -> shrt.copyWithLikes_And_Token( likes.value().get(0)));
+		var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
+		var likes = cosmos.query(Likes.class, query, likesContainer);
+
+		long likesCount = likes.value().isEmpty() ? 0 : likes.value().size();
+		return errorOrValue( cosmos.getOne(shortId, Short.class, shortsContainer), shrt -> shrt.copyWithLikes_And_Token( likesCount));
 	}
 
-	
+	//TODO VER COM OS STORES SE ISTO CHEGA
 	@Override
 	public Result<Void> deleteShort(String shortId, String password) {
 		Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
@@ -94,21 +99,29 @@ public class JavaShorts implements Shorts {
 					if(!res.isOK())
 						return Result.error(NOT_FOUND);
 
-					var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
+					//var query = format("DELETE Likes l WHERE l.shortId = '%s'", shortId);
+					var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
 
-					cosmos.query( Likes.class,query, likesContainer);
+					List<Likes> likes = cosmos.query( Likes.class, query, likesContainer).value();
+
+					for(Likes l : likes){
+						cosmos.deleteOne(l, likesContainer);
+					}
 
 					return JavaBlobs.getInstance().delete(shrt.getBlobUrl(), Token.get() );
 			});	
 		});
 	}
 
+	//TODO MOSTRAR AOS STORES PARA VER SE TA BOM
 	@Override
 	public Result<List<String>> getShorts(String userId) {
 		Log.info(() -> format("getShorts : userId = %s\n", userId));
 
-		var query = format("SELECT s.shortId FROM Short s WHERE s.ownerId = '%s'", userId);
-		return errorOrValue( okUser(userId), cosmos.query(String.class, query, shortsContainer));
+		var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
+		List<Map> res = errorOrValue( okUser(userId), cosmos.query(Map.class, query, shortsContainer)).value();
+		List<String> ids = res.stream().map(result -> result.get("id").toString()).toList();
+		return Result.ok(ids);
 	}
 
 	@Override
@@ -126,8 +139,10 @@ public class JavaShorts implements Shorts {
 	public Result<List<String>> followers(String userId, String password) {
 		Log.info(() -> format("followers : userId = %s, pwd = %s\n", userId, password));
 
-		var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);		
-		return errorOrValue( okUser(userId, password), cosmos.query(String.class, query, followingContainer));
+		var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);
+		List<Map> res = errorOrValue( okUser(userId), cosmos.query(Map.class, query, followingContainer)).value();
+		List<String> ids = res.stream().map(result -> result.get("follower").toString()).toList();
+		return Result.ok(ids);
 	}
 
 	@Override
@@ -141,15 +156,17 @@ public class JavaShorts implements Shorts {
 		});
 	}
 
+	//TODO VER ISTO COM O STOR
 	@Override
 	public Result<List<String>> likes(String shortId, String password) {
 		Log.info(() -> format("likes : shortId = %s, pwd = %s\n", shortId, password));
 
 		return errorOrResult( getShort(shortId), shrt -> {
 			
-			var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);					
-			
-			return errorOrValue( okUser( shrt.getOwnerId(), password ), cosmos.query(String.class, query, likesContainer));
+			var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
+			List<Map> res = cosmos.query(Map.class, query, likesContainer).value();
+			List<String> ids = res.stream().map(result -> result.get("userId").toString()).toList();
+			return Result.ok(ids);
 		});
 	}
 
@@ -157,15 +174,50 @@ public class JavaShorts implements Shorts {
 	public Result<List<String>> getFeed(String userId, String password) {
 		Log.info(() -> format("getFeed : userId = %s, pwd = %s\n", userId, password));
 
-		final var QUERY_FMT = """
-				SELECT s.shortId, s.timestamp FROM Short s WHERE	s.ownerId = '%s'				
-				UNION			
-				SELECT s.shortId, s.timestamp FROM Short s, Following f 
-					WHERE 
-						f.followee = s.ownerId AND f.follower = '%s' 
-				ORDER BY s.timestamp DESC""";
+//		final var QUERY_FMT = """
+//
+//				UNION
+//
+//				ORDER BY s.timestamp DESC""";
+//		final var SECOND_QUERYEXEMPLE = "SELECT s.id, s.timestamp FROM Short s, Following f WHERE f.followee = s.ownerId AND f.follower = '%s'";
 
-		return errorOrValue( okUser( userId, password), cosmos.query(String.class, format(QUERY_FMT, userId, userId), shortsContainer));
+		final var FIRST_QUERY = format("SELECT s.id, s.timestamp FROM Short s WHERE	s.ownerId = '%s'", userId);
+		List<Map> queryRes1 = cosmos.query(Map.class, FIRST_QUERY, shortsContainer).value();
+
+		List<Tuple<String, Long>> res1 = queryRes1.stream()
+					.map(result -> new Tuple<>((String) result.get("id"), (Long) result.get("timestamp")))
+					.collect(Collectors.toList());
+
+
+		final var SECOND_QUERY = format("SELECT f.followee FROM Following f WHERE f.follower = '%s'", userId);
+		List<Map> res2 = cosmos.query(Map.class, SECOND_QUERY, followingContainer).value();
+		List<String> followees = res2.stream().map(result -> result.get("followee").toString()).toList();
+
+		List<Tuple<String, Long>> resultTuples = new ArrayList<>();
+
+		for (String f : followees) {
+			String query = String.format("SELECT s.id, s.timestamp FROM Short s WHERE s.ownerId = '%s'", f);
+			List<Map> queryResult = cosmos.query(Map.class, query, shortsContainer).value();
+
+			List<Tuple<String, Long>> tuples = queryResult.stream()
+					.map(result -> new Tuple<>((String) result.get("id"), (Long) result.get("timestamp")))
+					.collect(Collectors.toList());
+
+			resultTuples.addAll(tuples);
+		}
+
+		res1.addAll(resultTuples);
+
+		res1.sort((t1, t2) -> Long.compare(t2.getT2(), t1.getT2()));
+
+		List<String> result = new ArrayList<>();
+		for (Tuple<String, Long> s : res1){
+			result.add(s.getT1());
+		}
+
+//		List<String> ids = res.stream().map(result -> result.get("id").toString()).toList();
+		return Result.ok(result);
+//		return errorOrValue( okUser( userId, password), cosmos.query(String.class, format(QUERY_FMT, userId, userId), shortsContainer));
 	}
 		
 	protected Result<User> okUser( String userId, String pwd) {

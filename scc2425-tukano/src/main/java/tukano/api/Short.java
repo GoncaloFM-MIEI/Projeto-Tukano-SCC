@@ -18,7 +18,7 @@ import tukano.impl.Token;
 public class Short {
 	
 	@JsonProperty("id")
-	String shortId;
+	String id;
 	String ownerId;
 	String blobUrl;
 	long timestamp;
@@ -26,25 +26,25 @@ public class Short {
 
 	public Short() {}
 	
-	public Short(String shortId, String ownerId, String blobUrl, long timestamp, int totalLikes) {
+	public Short(String id, String ownerId, String blobUrl, long timestamp, int totalLikes) {
 		super();
-		this.shortId = shortId;
+		this.id = id;
 		this.ownerId = ownerId;
 		this.blobUrl = blobUrl;
 		this.timestamp = timestamp;
 		this.totalLikes = totalLikes;
 	}
 
-	public Short(String shortId, String ownerId, String blobUrl) {
-		this( shortId, ownerId, blobUrl, System.currentTimeMillis(), 0);
+	public Short(String id, String ownerId, String blobUrl) {
+		this( id, ownerId, blobUrl, System.currentTimeMillis(), 0);
 	}
 	
 	public String getShortId() {
-		return shortId;
+		return id;
 	}
 
 	public void setShortId(String shortId) {
-		this.shortId = shortId;
+		this.id = shortId;
 	}
 
 	public String getOwnerId() {
@@ -81,12 +81,12 @@ public class Short {
 
 	@Override
 	public String toString() {
-		return "Short [shortId=" + shortId + ", ownerId=" + ownerId + ", blobUrl=" + blobUrl + ", timestamp="
+		return "Short [shortId=" + id + ", ownerId=" + ownerId + ", blobUrl=" + blobUrl + ", timestamp="
 				+ timestamp + ", totalLikes=" + totalLikes + "]";
 	}
 	
 	public Short copyWithLikes_And_Token( long totLikes) {
 		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(blobUrl));
-		return new Short( shortId, ownerId, urlWithToken, timestamp, (int)totLikes);
+		return new Short( id, ownerId, urlWithToken, timestamp, (int)totLikes);
 	}	
 }
