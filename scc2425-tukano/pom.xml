@@ -83,7 +83,8 @@
 				<artifactId>tomcat7-maven-plugin</artifactId>
 				<version>2.1</version>
 				<configuration>
-					<url>http://maven:s3cret@172.30.52.142:8080/manager/text</url>
+					<!--><url>http://maven:s3cret@172.30.52.142:8080/manager/text</url><!-->
+					<url>http://maven:s3cret@127.0.0.1:8080/manager/text</url>
 					<server>tomcat-docker</server>
 					<username>maven</username>
 					<password>s3cret</password>
