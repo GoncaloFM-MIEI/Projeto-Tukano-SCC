@@ -4,6 +4,7 @@
  * Exported functions to be used in the testing scripts.
  */
 module.exports = {
+  printStatus: printStatus,
   uploadRandomizedUser,
   processRegisterReply
 }
@@ -87,3 +88,16 @@ function uploadRandomizedUser(requestParams, context, ee, next) {
     requestParams.body = JSON.stringify(user);
     return next();
 } 
+
+function printStatus (requestParams, response, context, ee, next) {
+    // Check if the response is JSON
+    if (response.body && typeof response.body === 'object') {
+        // Pretty-print JSON with 2 spaces indentation
+        const prettyPrinted = JSON.stringify(response.body, null, 2);
+        console.log(prettyPrinted.split('\n').join('\n')); // Forces new lines for readability
+    } else {
+        // Print as is if it's not an object
+        console.log(response.body);
+    }
+    return next();
+}
