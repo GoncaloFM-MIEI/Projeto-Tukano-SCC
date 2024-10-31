@@ -1,33 +1,23 @@
 package tukano.impl;
 
-import static java.lang.String.format;
-import static tukano.api.Result.ErrorCode.*;
-import static tukano.api.Result.error;
-import static tukano.api.Result.errorOrResult;
-import static tukano.api.Result.errorOrValue;
-import static tukano.api.Result.errorOrVoid;
-import static tukano.api.Result.ok;
-import static utils.DB.getOne;
+import com.azure.cosmos.CosmosContainer;
+import tukano.api.Short;
+import tukano.api.*;
+import tukano.impl.data.Following;
+import tukano.impl.data.Likes;
+import utils.CosmosDBLayer;
+import utils.Tuple;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import com.azure.cosmos.CosmosContainer;
-import com.azure.cosmos.CosmosException;
-import org.checkerframework.checker.units.qual.A;
-import utils.Tuple;
-import reactor.util.function.Tuple2;
-import tukano.api.Blobs;
-import tukano.api.Result;
-import tukano.api.Short;
-import tukano.api.Shorts;
-import tukano.api.User;
-import tukano.impl.data.Following;
-import tukano.impl.data.Likes;
-import tukano.impl.rest.TukanoRestServer;
-import utils.CosmosDBLayer;
-import utils.DB;
+import static java.lang.String.format;
+import static tukano.api.Result.ErrorCode.*;
+import static tukano.api.Result.*;
 
 public class JavaShorts implements Shorts {
 
@@ -64,10 +54,13 @@ public class JavaShorts implements Shorts {
 	public Result<Short> createShort(String userId, String password) {
 		Log.info(() -> format("createShort : userId = %s, pwd = %s\n", userId, password));
 
+		//TODO verificar se é este o url correto
+		String url = "http:127.0.0.1:8080/tukano/rest";
 		return errorOrResult( okUser(userId, password), user -> {
-			
+
 			var shortId = format("%s+%s", userId, UUID.randomUUID());
-			var blobUrl = format("%s/%s/%s", TukanoRestServer.serverURI, Blobs.NAME, shortId); 
+			//var blobUrl = format("%s/%s/%s", TukanoRestServer.serverURI, Blobs.NAME, shortId);
+			var blobUrl = format("%s/%s/%s", url, Blobs.NAME, shortId);
 			var shrt = new Short(shortId, userId, blobUrl);
 
 			return errorOrValue(cosmos.insertOne(shrt, shortsContainer), s -> s.copyWithLikes_And_Token(0));
@@ -85,7 +78,7 @@ public class JavaShorts implements Shorts {
 		var likes = cosmos.query(Likes.class, query, likesContainer);
 
 		long likesCount = likes.value().isEmpty() ? 0 : likes.value().size();
-		return errorOrValue( cosmos.getOne(shortId, Short.class, shortsContainer), shrt -> shrt.copyWithLikes_And_Token( likesCount));
+		return errorOrValue( cosmos.getOne(shortId, Short.class, shortsContainer), shrt -> shrt.copyWithLikes_And_Token(likesCount));
 	}
 
 	//TODO VER COM OS STORES SE ISTO CHEGA

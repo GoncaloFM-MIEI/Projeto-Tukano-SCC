@@ -1,0 +1,117 @@
+config:
+  target: http://127.0.0.1:8080/tukano/rest
+  plugins:
+    metrics-by-endpoint: {}
+  #  http:
+  #    timeout: 10
+  processor: ./test-utils.js
+  phases:
+    - name: "Shorts-testing"
+      duration: 1
+      arrivalRate: 1
+#  payload:
+#    path: ../data/users.csv
+#    #order: sequence # selects users sequentially, default is random
+#    loadAll: true # load the whole CSV
+#    name: auth
+#    #skipHeader: true # The first line is a header, so we want to skip it
+#    #delimiter: "," # standard delimiter
+#    #skipEmptyLines: true # not important in our case
+#    fields:
+#      - "userid"
+#      - "pwd"
+#      - "email"
+#      - "displayName"
+
+scenarios:
+  - flow:
+      - loop:
+          # User creation
+          - post:
+              url: /users/
+              headers:
+                Content-Type: application/json
+              afterResponse: "printStatus"
+              json:
+                userId: "kGallagher"
+                pwd: "easypass"
+                email: "kgallagher@gmail.com"
+                displayName: "Gallagher"
+          - post:
+              url: /users/
+              headers:
+                Content-Type: application/json
+              afterResponse: "printStatus"
+              json:
+                userId: "SergioDuarte"
+                pwd: "easypass"
+                email: "smd@gmail.com"
+                displayName: "SergioD"
+          # Shorts creation
+          - post:
+              url: /shorts/kGallagher?pwd=easypass
+              afterResponse:
+                - capture:
+                    json: $.id
+                    as: s1id
+          - post:
+              url: /shorts/SergioDuarte?pwd=easypass
+              afterResponse:
+                - capture:
+                    json: $.id
+                    as: s2id
+          # getShort
+          - get:
+              url: /shorts/{{ s1id }}
+              afterResponse: "printStatus"
+          - get:
+              url: /shorts/{{ s2id }}
+              afterResponse: "printStatus"
+          # getShorts
+          - get:
+              url: /shorts/kGallagher/shorts
+              afterResponse: "printStatus"
+          - get:
+              url: /shorts/SergioDuarte/shorts
+              afterResponse: "printStatus"
+          #Follow
+          - post:
+              url: /shorts/SergioDuarte/kGallagher/followers?pwd=easypass
+              json:
+                isFollowing: true
+              afterResponse: "printStatus"
+          - post:
+              url: /shorts/kGallagher/SergioDuarte/followers?pwd=easypass
+              json:
+                isFollowing: true
+              afterResponse: "printStatus"
+          # Followers
+          - get:
+              url: /shorts/SergioDuarte/followers?pwd=easypass
+              afterResponse: "printStatus"
+          # Like
+          - post:
+              url: /shorts/{{ s2id }}/kGallagher/likes?pwd=easypass
+              json:
+                isLiked: true
+              afterResponse: "printStatus"
+          # Likes
+          - get:
+              url: /shorts/{{ s2id }}/likes?pwd=easypass
+              queryParams:
+                pwd: "54321"
+              afterResponse: "printStatus"
+          # Feed
+          - get:
+              url: /shorts/kGallagher/feed
+              queryParams:
+                pwd: "12345"
+              afterResponse: "printStatus"
+          # Delete Short
+          - delete:
+              url: /shorts/{{ s1id }}?pwd=easypass
+              afterResponse: "printStatus"
+          #Delete All Shorts
+          - delete:
+              url: /shorts/SergioDuarte?pwd=easypass&token=someTokenValue
+              afterResponse: "printStatus"
