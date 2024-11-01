@@ -52,7 +52,7 @@ public class JavaUsers implements Users {
 
 
 	@Override
-	public Result<String> createUser(User user) {
+	public Result<String> createUser(User user, boolean hasCache) {
 		Log.info(() -> format("createUser : %s\n", user));
 
 		if( badUserInfo( user ) ) {
@@ -61,9 +61,9 @@ public class JavaUsers implements Users {
 
 		Locale.setDefault(Locale.US);
 		Result<String> res = errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
-		if (res.isOK()){
+		if (res.isOK() && hasCache){
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-
+				Log.info(()->String.format("\n\nCREATE USER (IN CACHE): %s\n\n", user.getUserId()));
 				var key = USER_PREFIX + user.getUserId();
 				var value = JSON.encode(user);
 				jedis.set(key, value);
@@ -77,80 +77,86 @@ public class JavaUsers implements Users {
 	}
 
 	@Override
-	public Result<User> getUser(String userId, String pwd) {
+	public Result<User> getUser(String userId, String pwd, boolean hasCache) {
 		Log.info( () -> format("getUser : userId = %s, pwd = %s\n", userId, pwd));
 
 		if (userId == null)
 			return error(BAD_REQUEST);
 
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+		if(hasCache) {
+			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 
-			var key = USER_PREFIX + userId;
-			var value = jedis.get(key);
-			if (value != null) {
-				var user = JSON.decode(value, User.class);
-				jedis.expire(key, EXPIRATION_TIME);
-				Log.info(()->String.format("\n\nGET USER (IN CACHE): %s\n\n", user.getUserId()));
-				return Result.ok(user);
+				var key = USER_PREFIX + userId;
+				var value = jedis.get(key);
+				if (value != null) {
+					var user = JSON.decode(value, User.class);
+					jedis.expire(key, EXPIRATION_TIME);
+					Log.info(() -> String.format("\n\nGET USER (IN CACHE): %s\n\n", user.getUserId()));
+					return Result.ok(user);
+				}
+
+				Result<User> u = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
+
+				if (u.isOK()) {
+					Log.info(() -> String.format("\n\nPUTTING USER IN CACHE: %s\n\n", u.value().getUserId()));
+					var user = JSON.encode(u.value());
+					jedis.set(key, user);
+					jedis.expire(key, EXPIRATION_TIME);
+				}
+
+				return u;
 			}
-
-			Result<User> u = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
-
-			if (u.isOK()) {
-				Log.info(()->String.format("\n\nPUTTING USER IN CACHE: %s\n\n", u.value().getUserId()));
-				var user = JSON.encode(u.value());
-				jedis.set(key, user);
-				jedis.expire(key, EXPIRATION_TIME);
-			}
-
-			return u;
+		}else {
+			return validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
 		}
 	}
 
 	@Override
-	public Result<User> updateUser(String userId, String pwd, User other) {
+	public Result<User> updateUser(String userId, String pwd, User other, boolean hasCache) {
 		Log.info(() -> format("updateUser : userId = %s, pwd = %s, user: %s\n", userId, pwd, other));
 
 		if (badUpdateUserInfo(userId, pwd, other))
 			return error(BAD_REQUEST);
 
+		if(hasCache) {
+			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 
+				var key = USER_PREFIX + userId;
+				var value = jedis.get(key);
 
-		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+				if (value != null) {
+					var user = JSON.decode(value, User.class);
+					Log.info(() -> String.format("\n\nUPDATE USER (IN CACHE) (OLD USER): %s\n\n", user.getUserId()));
+					Result<User> res = errorOrValue(cosmos.updateOne(user.updateFrom(other), usersContainer), other);
 
-			var key = USER_PREFIX + userId;
-			var value = jedis.get(key);
+					if (res.isOK()) {
+						var newValue = JSON.encode(res.value());
+						jedis.set(key, newValue);
+						jedis.expire(key, EXPIRATION_TIME);
+					}
+					return res;
+				} else {
 
-			if (value != null) {
-				var user = JSON.decode(value, User.class);
-				Log.info(()->String.format("\n\nUPDATE USER (IN CACHE) (OLD USER): %s\n\n", user.getUserId()));
-				Result<User> res = errorOrValue(cosmos.updateOne(user.updateFrom(other), usersContainer), other);
+					Result<User> res = errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
 
-				if(res.isOK()){
-					var newValue = JSON.encode(res.value());
-					jedis.set(key, newValue);
-					jedis.expire(key, EXPIRATION_TIME);
+					if (res.isOK()) {
+						Log.info(() -> String.format("\n\nPUTTING USER UPDATE IN CACHE: %s\n\n", res.value().getUserId()));
+						var key1 = USER_PREFIX + res.value().getUserId();
+						var value1 = JSON.encode(res.value());
+						jedis.set(key1, value1);
+						jedis.expire(key, EXPIRATION_TIME);
+
+					}
+					return res;
 				}
-				return res;
-			}else {
-
-				Result<User> res = errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
-
-				if (res.isOK()) {
-					Log.info(()->String.format("\n\nPUTTING USER UPDATE IN CACHE: %s\n\n", res.value().getUserId()));
-					var key1 = USER_PREFIX + res.value().getUserId();
-					var value1 = JSON.encode(res.value());
-					jedis.set(key1, value1);
-					jedis.expire(key, EXPIRATION_TIME);
-
-				}
-				return res;
 			}
+		}else{
+			return errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
 		}
 	}
 
 	@Override
-	public Result<User> deleteUser(String userId, String pwd) {
+	public Result<User> deleteUser(String userId, String pwd, boolean hasCache) {
 		Log.info(() -> format("deleteUser : userId = %s, pwd = %s\n", userId, pwd));
 
 		if (userId == null || pwd == null )
@@ -169,22 +175,24 @@ public class JavaUsers implements Users {
 
 			//Result<User> res = cosmos.getOne(userId, User.class);
 			cosmos.deleteOne(user, usersContainer);
-
-			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				if(res.isOK()) {
-					var key = USER_PREFIX + res.value().getUserId();
-					jedis.del(key);
+			if(hasCache) {
+				Log.info(() -> String.format("\n\nDELETE USER (IN CACHE): %s\n\n", user.getUserId()));
+				try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+					if (res.isOK()) {
+						var key = USER_PREFIX + res.value().getUserId();
+						jedis.del(key);
+					}
 				}
 			}
-
 			//	cosmos.getOne( userId, User.class);
 
 			return res;
 		});
 	}
 
+	//TODO FAZ SENTIDO TER CACHE????
 	@Override
-	public Result<List<User>> searchUsers(String pattern) {
+	public Result<List<User>> searchUsers(String pattern, boolean hasCache) {
 		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
 
 		//TODO TEMOS MESMO QUE TER O .TOUPPSERCASE() no patter? Não funciona com ele :)

@@ -1,4 +1,4 @@
-package tukano.clients.rest;
+package tukano.rest;
 
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.MediaType;

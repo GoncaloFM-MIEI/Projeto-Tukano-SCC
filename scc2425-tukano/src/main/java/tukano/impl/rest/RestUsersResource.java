@@ -17,27 +17,27 @@ public class RestUsersResource extends RestResource implements RestUsers {
 	}
 	
 	@Override
-	public String createUser(User user) {
-		return super.resultOrThrow( impl.createUser( user));
+	public String createUser(User user, boolean hasCache) {
+		return super.resultOrThrow( impl.createUser( user, hasCache));
 	}
 
 	@Override
-	public User getUser(String name, String pwd) {
-		return super.resultOrThrow( impl.getUser(name, pwd));
+	public User getUser(String name, String pwd, boolean hasCache) {
+		return super.resultOrThrow( impl.getUser(name, pwd, hasCache));
 	}
 	
 	@Override
-	public User updateUser(String name, String pwd, User user) {
-		return super.resultOrThrow( impl.updateUser(name, pwd, user));
+	public User updateUser(String name, String pwd, User user, boolean hasCache) {
+		return super.resultOrThrow( impl.updateUser(name, pwd, user, hasCache));
 	}
 
 	@Override
-	public User deleteUser(String name, String pwd) {
-		return super.resultOrThrow( impl.deleteUser(name, pwd));
+	public User deleteUser(String name, String pwd,	boolean hasCache) {
+		return super.resultOrThrow( impl.deleteUser(name, pwd, hasCache));
 	}
 
 	@Override
-	public List<User> searchUsers(String pattern) {
-		return super.resultOrThrow( impl.searchUsers( pattern));
+	public List<User> searchUsers(String pattern, boolean hasCache) {
+		return super.resultOrThrow( impl.searchUsers( pattern, hasCache));
 	}
 }

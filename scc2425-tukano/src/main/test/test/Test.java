@@ -1,17 +1,13 @@
 package test;
 
-import java.io.File;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
 import tukano.api.Result;
-import tukano.api.User;
-import tukano.clients.rest.RestBlobsClient;
-import tukano.clients.rest.RestShortsClient;
-import tukano.clients.rest.RestUsersClient;
+import tukano.rest.RestBlobsClient;
+import tukano.rest.RestShortsClient;
+import tukano.rest.RestUsersClient;
 import tukano.impl.rest.TukanoRestServer;
-import tukano.impl.Token;
 
 public class Test {
 	

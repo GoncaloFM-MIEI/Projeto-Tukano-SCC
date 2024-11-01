@@ -217,7 +217,7 @@ public class JavaShorts implements Shorts {
 	}
 		
 	protected Result<User> okUser( String userId, String pwd) {
-		return JavaUsers.getInstance().getUser(userId, pwd);
+		return JavaUsers.getInstance().getUser(userId, pwd, true); //TODO: hardcoded
 	}
 	
 	private Result<Void> okUser( String userId ) {
