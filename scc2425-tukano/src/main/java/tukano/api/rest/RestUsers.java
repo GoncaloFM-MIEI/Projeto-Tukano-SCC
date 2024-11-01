@@ -22,6 +22,7 @@ public interface RestUsers {
 	String PWD = "pwd";
 	String QUERY = "query";
 	String USER_ID = "userId";
+	boolean NO_CACHE = false;
 	
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)

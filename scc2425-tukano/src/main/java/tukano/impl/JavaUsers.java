@@ -26,6 +26,8 @@ import utils.JSON;
 import utils.RedisCache;
 
 public class JavaUsers implements Users {
+	private final String USER_PREFIX = "user:";
+	private final int EXPIRATION_TIME = 120;
 	
 	private static Logger Log = Logger.getLogger(JavaUsers.class.getName());
 
@@ -62,11 +64,10 @@ public class JavaUsers implements Users {
 		if (res.isOK()){
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 
-				var key = "users:" + user.getUserId();
+				var key = USER_PREFIX + user.getUserId();
 				var value = JSON.encode(user);
 				jedis.set(key, value);
-				int expirationTime = 240;
-				jedis.expire(key, expirationTime);
+				jedis.expire(key, EXPIRATION_TIME);
 			}
 		}
 		//return errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
@@ -84,18 +85,22 @@ public class JavaUsers implements Users {
 
 		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 
-			var key = "user:" + userId;
-			var user = JSON.decode(jedis.get(key), User.class);
-			if (user != null)
+			var key = USER_PREFIX + userId;
+			var value = jedis.get(key);
+			if (value != null) {
+				var user = JSON.decode(value, User.class);
+				jedis.expire(key, EXPIRATION_TIME);
+				Log.info(()->String.format("\n\nGET USER (IN CACHE): %s\n\n", user.getUserId()));
 				return Result.ok(user);
+			}
 
 			Result<User> u = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
 
 			if (u.isOK()) {
-				var value = JSON.encode(u);
-				jedis.set(key, value);
-				int expirationTime = 240;
-				jedis.expire(key, expirationTime);
+				Log.info(()->String.format("\n\nPUTTING USER IN CACHE: %s\n\n", u.value().getUserId()));
+				var user = JSON.encode(u.value());
+				jedis.set(key, user);
+				jedis.expire(key, EXPIRATION_TIME);
 			}
 
 			return u;
@@ -113,30 +118,35 @@ public class JavaUsers implements Users {
 
 		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 
-			var key = "users:" + userId;
+			var key = USER_PREFIX + userId;
 			var value = jedis.get(key);
-			var user = JSON.decode(value, User.class);
-			if (user != null) {
-				Result<User> res = errorOrValue(cosmos.updateOne(user.updateFrom(other), usersContainer), user);
-				var newValue = JSON.encode(res.value());
-				jedis.set(key, newValue);
+
+			if (value != null) {
+				var user = JSON.decode(value, User.class);
+				Log.info(()->String.format("\n\nUPDATE USER (IN CACHE) (OLD USER): %s\n\n", user.getUserId()));
+				Result<User> res = errorOrValue(cosmos.updateOne(user.updateFrom(other), usersContainer), other);
+
+				if(res.isOK()){
+					var newValue = JSON.encode(res.value());
+					jedis.set(key, newValue);
+					jedis.expire(key, EXPIRATION_TIME);
+				}
 				return res;
 			}else {
 
 				Result<User> res = errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
 
 				if (res.isOK()) {
-					var key1 = "users:" + res.value().getUserId();
+					Log.info(()->String.format("\n\nPUTTING USER UPDATE IN CACHE: %s\n\n", res.value().getUserId()));
+					var key1 = USER_PREFIX + res.value().getUserId();
 					var value1 = JSON.encode(res.value());
 					jedis.set(key1, value1);
-					int expirationTime = 240;
-					jedis.expire(key, expirationTime);
+					jedis.expire(key, EXPIRATION_TIME);
 
 				}
 				return res;
 			}
 		}
-
 	}
 
 	@Override
@@ -161,9 +171,10 @@ public class JavaUsers implements Users {
 			cosmos.deleteOne(user, usersContainer);
 
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-
-				var key = "users:" + res.value().getUserId();
-				jedis.del(key);
+				if(res.isOK()) {
+					var key = USER_PREFIX + res.value().getUserId();
+					jedis.del(key);
+				}
 			}
 
 			//	cosmos.getOne( userId, User.class);
