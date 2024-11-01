@@ -168,8 +168,10 @@ public class JavaBlobs implements Blobs {
 	}
 	
 	private boolean validBlobId(String blobId, String token) {		
-		System.out.println( toURL(blobId));
-		return Token.isValid(token, toURL(blobId));
+		//System.out.println( toURL(blobId));
+		//return Token.isValid(token, toURL(blobId));
+		System.out.println( blobId);
+		return Token.isValid(token, blobId);
 	}
 
 	private String toPath(String blobId) {

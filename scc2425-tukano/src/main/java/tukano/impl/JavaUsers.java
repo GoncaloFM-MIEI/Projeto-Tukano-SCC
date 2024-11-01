@@ -83,6 +83,11 @@ public class JavaUsers implements Users {
 		if (userId == null)
 			return error(BAD_REQUEST);
 
+		//FOR okUser
+		if(pwd == ""){
+			return error(FORBIDDEN);
+		}
+
 		if(hasCache) {
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 

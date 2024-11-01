@@ -9,7 +9,7 @@ public class Token {
 
 	private static final String DELIMITER = "-";
 	private static final long MAX_TOKEN_AGE = 10000;
-	private static String secret;
+	private static String secret = "VERYSECRETSECRET";
 
 	public static void setSecret(String s) {
 		Log.info(() -> String.format("\n\nSETTING SECRET: %s\n\n", s));
@@ -18,16 +18,16 @@ public class Token {
 
 	public static String get() {
 		var timestamp = System.currentTimeMillis();
-		//var signature = Hash.of(timestamp, secret);
-		var signature = Hash.of(timestamp);
+		var signature = Hash.of(timestamp, secret);
+		//var signature = Hash.of(timestamp);
 		return String.format("%s%s%s", timestamp, DELIMITER, signature);
 	}
 	
 	public static String get(String id) {
 		var timestamp = System.currentTimeMillis();
 		//Log.info(() -> String.format("\n\nTOKEN (id): %s\nTOKEN (timestamp): %d\n TOKEN (secret): %s\n\n", id, timestamp, secret));
-		//var signature = Hash.of(id, timestamp, secret);
-		var signature = Hash.of(id, timestamp);
+		var signature = Hash.of(id, timestamp, secret);
+		//var signature = Hash.of(id, timestamp);
 		return String.format("%s%s%s", timestamp, DELIMITER, signature);
 	}
 
@@ -35,8 +35,8 @@ public class Token {
 		try {
 			var bits = tokenStr.split(DELIMITER);
 			var timestamp = Long.valueOf(bits[0]);
-			var hmac = Hash.of(id, timestamp);
-			//var hmac = Hash.of(id, timestamp, secret);
+			//var hmac = Hash.of(id, timestamp);
+			var hmac = Hash.of(id, timestamp, secret);
 			var elapsed = Math.abs(System.currentTimeMillis() - timestamp);			
 			Log.info(String.format("hash ok:%s, elapsed %s ok: %s\n", hmac.equals(bits[1]), elapsed, elapsed < MAX_TOKEN_AGE));
 			return hmac.equals(bits[1]) && elapsed < MAX_TOKEN_AGE;			
