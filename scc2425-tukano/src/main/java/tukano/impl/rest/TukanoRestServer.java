@@ -77,7 +77,8 @@ public class TukanoRestServer extends Application {
 	public static void main(String[] args) throws Exception {
 		Args.use(args);
 
-		Token.setSecret( Args.valueOf("-secret", ""));
+		//Token.setSecret( Args.valueOf("-secret", ""));
+		Token.setSecret("segredo");
 		//Props.load( Args.valueOf("-props", "").split(","));
 
 		new TukanoRestServer().start();

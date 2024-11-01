@@ -15,6 +15,7 @@ import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import static java.lang.CharSequence.compare;
 import static java.lang.String.format;
 import static tukano.api.Result.ErrorCode.*;
 import static tukano.api.Result.*;
@@ -63,7 +64,10 @@ public class JavaShorts implements Shorts {
 			var blobUrl = format("%s/%s/%s", url, Blobs.NAME, shortId);
 			var shrt = new Short(shortId, userId, blobUrl);
 
-			return errorOrValue(cosmos.insertOne(shrt, shortsContainer), s -> s.copyWithLikes_And_Token(0));
+			return errorOrValue(cosmos.insertOne(shrt, shortsContainer), s -> {
+				Log.info(()-> format("Inserted Short: %s", s));
+				return s.copyWithLikes_And_Token(0);
+			});
 		});
 	}
 
@@ -120,8 +124,7 @@ public class JavaShorts implements Shorts {
 	@Override
 	public Result<Void> follow(String userId1, String userId2, boolean isFollowing, String password) {
 		Log.info(() -> format("follow : userId1 = %s, userId2 = %s, isFollowing = %s, pwd = %s\n", userId1, userId2, isFollowing, password));
-	
-		
+
 		return errorOrResult( okUser(userId1, password), user -> {
 			var f = new Following(userId1, userId2);
 			return errorOrVoid( okUser( userId2), isFollowing ? cosmos.insertOne( f , followingContainer) : cosmos.deleteOne( f , followingContainer));
@@ -234,16 +237,29 @@ public class JavaShorts implements Shorts {
 		try {
 
 			//delete shorts
-			var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);
-			cosmos.query(Short.class, query1, shortsContainer);
+			//var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);
+			var query1 = format("SELECT * FROM Short s WHERE s.ownerId = '%s'", userId);
+			List<Short> shorts = cosmos.query(Short.class, query1, shortsContainer).value();
+			for(Short s : shorts){
+				cosmos.deleteOne(s, shortsContainer);
+			}
 
 			//delete follows
-			var query2 = format("DELETE Following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);
-			cosmos.query(Following.class, query2, followingContainer);
+			//var query2 = format("DELETE Following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);
+			var query2 = format("SELECT * FROM Following f WHERE f.follower = '%s' OR f.followe = '%s'",userId, userId);
+			List<Following> following = cosmos.query(Following.class, query2, followingContainer).value();
+			for(Following f : following){
+				cosmos.deleteOne(f, followingContainer);
+			}
 
 			//delete likes
-			var query3 = format("DELETE Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
-			cosmos.query(Likes.class, query3, likesContainer);
+			//var query3 = format("DELETE Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
+			var query3 = format("SELECT * FROM Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
+			List<Likes> likes = cosmos.query(Likes.class, query3, likesContainer).value();
+			for(Likes l: likes){
+				cosmos.deleteOne(l,likesContainer );
+			}
+
 
 		} catch (Exception e) {
 			return Result.error(INTERNAL_ERROR);

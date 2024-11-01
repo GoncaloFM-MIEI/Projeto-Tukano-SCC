@@ -12,6 +12,7 @@ public class Token {
 	private static String secret;
 
 	public static void setSecret(String s) {
+		Log.info(() -> String.format("\n\nSETTING SECRET: %s\n\n", s));
 		secret = s;
 	}
 
@@ -23,7 +24,9 @@ public class Token {
 	
 	public static String get(String id) {
 		var timestamp = System.currentTimeMillis();
-		var signature = Hash.of(id, timestamp, secret);
+		//Log.info(() -> String.format("\n\nTOKEN (id): %s\nTOKEN (timestamp): %d\n TOKEN (secret): %s\n\n", id, timestamp, secret));
+		//var signature = Hash.of(id, timestamp, secret);
+		var signature = Hash.of(id, timestamp);
 		return String.format("%s%s%s", timestamp, DELIMITER, signature);
 	}
 

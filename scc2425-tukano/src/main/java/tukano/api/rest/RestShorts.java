@@ -2,14 +2,8 @@ package tukano.api.rest;
 
 import java.util.List;
 
-import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DELETE;
-import jakarta.ws.rs.GET;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.QueryParam;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import tukano.api.Short;
 
@@ -51,7 +45,7 @@ public interface RestShorts {
 	@POST
 	@Path("/{" + USER_ID1 + "}/{" + USER_ID2 + "}" + FOLLOWERS )
 	@Consumes(MediaType.APPLICATION_JSON)
-	void follow(@PathParam(USER_ID1) String userId1, @PathParam(USER_ID2) String userId2, boolean isFollowing, @QueryParam(PWD) String password);
+	void follow(@PathParam(USER_ID1) String userId1, @PathParam(USER_ID2) String userId2, FollowRequest isFollowing, @QueryParam(PWD) String password);
 
 	@GET
 	@Path("/{" + USER_ID + "}" + FOLLOWERS )
@@ -61,7 +55,7 @@ public interface RestShorts {
 	@POST
 	@Path("/{" + SHORT_ID + "}/{" + USER_ID + "}" + LIKES )
 	@Consumes(MediaType.APPLICATION_JSON)
-	void like(@PathParam(SHORT_ID) String shortId, @PathParam(USER_ID) String userId, boolean isLiked,  @QueryParam(PWD) String password);
+	void like(@PathParam(SHORT_ID) String shortId, @PathParam(USER_ID) String userId, LikeRequest isLiked,  @QueryParam(PWD) String password);
 
 	@GET
 	@Path("/{" + SHORT_ID + "}" + LIKES )
@@ -77,4 +71,46 @@ public interface RestShorts {
 	@Path("/{" + USER_ID + "}" + SHORTS)
 	void deleteAllShorts(@PathParam(USER_ID) String userId, @QueryParam(PWD) String password, @QueryParam(TOKEN) String token);
 
+	class FollowRequest {
+		@JsonProperty("isFollowing")
+		private boolean isFollowing;
+
+		public FollowRequest(){}
+
+		public FollowRequest(boolean isFollowing){
+			this.isFollowing = isFollowing;
+		}
+
+		public boolean isFollowing() {
+			return isFollowing;
+		}
+
+		public void setFollowing(boolean isFollowing) {
+			this.isFollowing = isFollowing;
+		}
+	}
+
+	class LikeRequest {
+		@JsonProperty("isLiked")
+		private boolean isLiked;
+
+		public LikeRequest(){}
+
+		public LikeRequest(boolean isLiked){
+			this.isLiked = isLiked;
+		}
+
+		public boolean isLiked() {
+			return isLiked;
+		}
+
+		public void isLiked(boolean isLiked) {
+			this.isLiked = isLiked;
+		}
+	}
+
+
+
+
 }
+

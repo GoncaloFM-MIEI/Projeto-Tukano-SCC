@@ -15,12 +15,15 @@ import java.util.logging.Logger;
 
 import com.azure.cosmos.CosmosContainer;
 import com.fasterxml.jackson.annotation.JsonAlias;
+import redis.clients.jedis.Jedis;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
 import tukano.impl.data.UserDAO;
 import utils.DB;
 import utils.CosmosDBLayer;
+import utils.JSON;
+import utils.RedisCache;
 
 public class JavaUsers implements Users {
 	
@@ -48,13 +51,28 @@ public class JavaUsers implements Users {
 
 	@Override
 	public Result<String> createUser(User user) {
-
 		Log.info(() -> format("createUser : %s\n", user));
+
 		if( badUserInfo( user ) ) {
 			return error(BAD_REQUEST);
 		}
+
 		Locale.setDefault(Locale.US);
-		return errorOrValue( cosmos.insertOne(user, usersContainer), user.getUserId() );
+		Result<String> res = errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
+		if (res.isOK()){
+			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+
+				var key = "users:" + user.getUserId();
+				var value = JSON.encode(user);
+				jedis.set(key, value);
+				int expirationTime = 240;
+				jedis.expire(key, expirationTime);
+			}
+		}
+		//return errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
+
+		return res;
+
 	}
 
 	@Override
@@ -63,8 +81,25 @@ public class JavaUsers implements Users {
 
 		if (userId == null)
 			return error(BAD_REQUEST);
-		
-		return validatedUserOrError( cosmos.getOne( userId, User.class, usersContainer), pwd);
+
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+
+			var key = "user:" + userId;
+			var user = JSON.decode(jedis.get(key), User.class);
+			if (user != null)
+				return Result.ok(user);
+
+			Result<User> u = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
+
+			if (u.isOK()) {
+				var value = JSON.encode(u);
+				jedis.set(key, value);
+				int expirationTime = 240;
+				jedis.expire(key, expirationTime);
+			}
+
+			return u;
+		}
 	}
 
 	@Override
@@ -74,7 +109,34 @@ public class JavaUsers implements Users {
 		if (badUpdateUserInfo(userId, pwd, other))
 			return error(BAD_REQUEST);
 
-		return errorOrResult( validatedUserOrError(cosmos.getOne( userId, User.class, usersContainer), pwd), user -> cosmos.updateOne( user.updateFrom(other), usersContainer));
+
+
+		try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+
+			var key = "users:" + userId;
+			var value = jedis.get(key);
+			var user = JSON.decode(value, User.class);
+			if (user != null) {
+				Result<User> res = errorOrValue(cosmos.updateOne(user.updateFrom(other), usersContainer), user);
+				var newValue = JSON.encode(res.value());
+				jedis.set(key, newValue);
+				return res;
+			}else {
+
+				Result<User> res = errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
+
+				if (res.isOK()) {
+					var key1 = "users:" + res.value().getUserId();
+					var value1 = JSON.encode(res.value());
+					jedis.set(key1, value1);
+					int expirationTime = 240;
+					jedis.expire(key, expirationTime);
+
+				}
+				return res;
+			}
+		}
+
 	}
 
 	@Override
@@ -97,6 +159,12 @@ public class JavaUsers implements Users {
 
 			//Result<User> res = cosmos.getOne(userId, User.class);
 			cosmos.deleteOne(user, usersContainer);
+
+			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+
+				var key = "users:" + res.value().getUserId();
+				jedis.del(key);
+			}
 
 			//	cosmos.getOne( userId, User.class);
 

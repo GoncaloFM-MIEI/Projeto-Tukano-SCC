@@ -85,7 +85,8 @@ public class Short {
 	}
 	
 	public Short copyWithLikes_And_Token( long totLikes) {
-		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(blobUrl));
+		//var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(blobUrl));
+		var urlWithToken = String.format("%s?token=%s", blobUrl, Token.get(id));
 		//var urlWithToken = String.format("%s?token=%s", "http:127.0.0.1:8080/tukano/rest/blobs", Token.get(blobUrl));
 		return new Short( id, ownerId, urlWithToken, timestamp, (int)totLikes);
 	}	

@@ -89,7 +89,7 @@ function uploadRandomizedUser(requestParams, context, ee, next) {
     return next();
 } 
 
-function printStatus (requestParams, response, context, ee, next) {
+/*function printStatus (requestParams, response, context, ee, next) {
     // Check if the response is JSON
     if (response.body && typeof response.body === 'object') {
         // Pretty-print JSON with 2 spaces indentation
@@ -99,5 +99,34 @@ function printStatus (requestParams, response, context, ee, next) {
         // Print as is if it's not an object
         console.log(response.body);
     }
+    return next();
+}*/
+
+function printStatus(requestParams, response, context, ee, next) {
+    try {
+        // Check if response body exists
+        if (response.body) {
+            let responseBody;
+
+            // If body is already parsed as JSON object
+            if (typeof response.body === 'object') {
+                responseBody = response.body;
+            } else {
+                // Attempt to parse if body is a JSON string
+                responseBody = JSON.stringify(response.body);
+            }
+
+            // Pretty-print JSON with 2 spaces indentation
+            const prettyPrinted = JSON.stringify(responseBody, null, 2);
+            console.log(prettyPrinted);
+        } else {
+            console.log("Response body is empty or undefined.");
+        }
+    } catch (error) {
+        // If parsing fails or another error occurs, log the error and response body
+        console.error("Error printing response:", error);
+        console.log("Raw response body:", response.body);
+    }
+
     return next();
 }
