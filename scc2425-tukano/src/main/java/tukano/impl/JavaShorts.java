@@ -1,23 +1,23 @@
 package tukano.impl;
 
 import com.azure.cosmos.CosmosContainer;
-import javassist.expr.NewArray;
 import redis.clients.jedis.Jedis;
 import tukano.api.Short;
 import tukano.api.*;
 import tukano.impl.data.Following;
 import tukano.impl.data.Likes;
-import tukano.impl.rest.TukanoRestServer;
 import utils.CosmosDBLayer;
 import utils.JSON;
 import utils.RedisCache;
 import utils.Tuple;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static java.lang.CharSequence.compare;
 import static java.lang.String.format;
 import static tukano.api.Result.ErrorCode.*;
 import static tukano.api.Result.*;
@@ -82,6 +82,8 @@ public class JavaShorts implements Shorts {
 			if(res.isOK() && hasCache) {
 				try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 					//Log.info(() -> format("\n\nSHORT CRIADO NA CACHE %s\n\n", shortId));
+
+
 					var key = SHORT_PREFIX + res.value().getShortId();
 					var value = JSON.encode(res.value());
 					jedis.set(key, value);
@@ -113,7 +115,12 @@ public class JavaShorts implements Shorts {
 				Long  likesCount;
 
 				var lKey = COUNTER_PREFIX + shortId;
-				var likes = jedis.get(lKey);
+				var key = SHORT_PREFIX + shortId;
+				//var likes = jedis.get(lKey);
+
+				List<String> values = jedis.mget(key, lKey);
+				String value = values.get(0);
+				String likes = values.get(1);
 
 			/*
 			Checking existence of likes in cache
@@ -131,8 +138,8 @@ public class JavaShorts implements Shorts {
 					if(likesOnDB.isOK()) {
 						likesCount = likesOnDB.value().isEmpty() ? 0 : (long) likesOnDB.value().size();
 
-						jedis.set(lKey, String.valueOf(likesCount));
-						jedis.expire(lKey, 120);
+						jedis.setex(lKey,120, String.valueOf(likesCount));
+						//jedis.expire(lKey, 120);
 					} else {
 						likesCount = 0L;
 					}
@@ -143,8 +150,8 @@ public class JavaShorts implements Shorts {
 			- if exists then extend expire time and return
 			with the likes count retrieved earlier
 			 */
-				var key = SHORT_PREFIX + shortId;
-				var value = jedis.get(key);
+
+				//var value = jedis.get(key);
 
 				if(value != null) {
 					//Log.info(() -> format("\n\nGET SHORT DA CACHE %s\n\n", shortId));
@@ -161,8 +168,8 @@ public class JavaShorts implements Shorts {
 				return errorOrResult( cosmos.getOne(shortId, Short.class, shortsContainer), shrt -> {
 					//Log.info(() -> format("\n\nGET SHORT NA DB %s\n\n", shortId));
 					var val = JSON.encode(shrt);
-					jedis.set(key, val);
-					jedis.expire(key,120);
+					jedis.setex(key,120, val);
+					//jedis.expire(key,120);
 
 					Short shortToGetWithLikes = shrt.copyWithLikes_And_Token(likesCount);
 					return ok(shortToGetWithLikes);
@@ -230,13 +237,14 @@ public class JavaShorts implements Shorts {
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 				var key = USER_SHORTS_LIST_PREFIX + userId;
 				var value = jedis.lrange(key, 0, -1);
+
 				if(!value.isEmpty()){
 					//Log.info(() -> format("\n\nGET SHORTS: USER SHORTS EXISTEM NA CACHE %s\n\n", userId));
-					List<String> res = new ArrayList<>();
-					for (var shrt: value){
-						var shortObj = JSON.decode(shrt, String.class);
-						res.add(shortObj);
-					}
+					List<String> res = value.stream().map(shrt -> JSON.decode(shrt, String.class)).toList();
+//					for (var shrt: value){
+//						var shortObj = JSON.decode(shrt, String.class);
+//						res.add(shortObj);
+//					}
 					jedis.expire(key,120);
 					return ok(res);
 				}
@@ -245,9 +253,12 @@ public class JavaShorts implements Shorts {
 				var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
 				List<Map> res = errorOrValue( okUser(userId, hasCache), cosmos.query(Map.class, query, shortsContainer)).value();
 				List<String> ids = res.stream().map(result -> result.get("id").toString()).toList();
-				for(String id : ids){
-					jedis.lpush(key, JSON.encode(id));
-				}
+
+				jedis.rpush(key, ids.stream().map(JSON::encode).toArray(String[]::new));
+
+//				for(String id : ids){
+//					jedis.lpush(key, JSON.encode(id));
+//				}
 				jedis.expire(key,120);
 				return Result.ok(ids);
 			}
