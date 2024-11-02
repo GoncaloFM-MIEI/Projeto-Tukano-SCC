@@ -27,29 +27,29 @@ public interface RestUsers {
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	String createUser(User user, @QueryParam(HAS_CACHE) boolean noCache);
+	String createUser(User user, @QueryParam(HAS_CACHE) boolean hasCache);
 	
 	
 	@GET
 	@Path("/{" + USER_ID+ "}")
 	@Produces(MediaType.APPLICATION_JSON)
-	User getUser(@PathParam(USER_ID) String userId, @QueryParam( PWD ) String pwd, @QueryParam(HAS_CACHE) boolean noCache);
+	User getUser(@PathParam(USER_ID) String userId, @QueryParam( PWD ) String pwd, @QueryParam(HAS_CACHE) boolean hasCache);
 	
 	
 	@PUT
 	@Path("/{" + USER_ID+ "}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	User updateUser(@PathParam( USER_ID ) String userId, @QueryParam( PWD ) String pwd, User user, @QueryParam(HAS_CACHE) boolean noCache);
+	User updateUser(@PathParam( USER_ID ) String userId, @QueryParam( PWD ) String pwd, User user, @QueryParam(HAS_CACHE) boolean hasCache);
 	
 	
 	@DELETE
 	@Path("/{" + USER_ID+ "}")
 	@Produces(MediaType.APPLICATION_JSON)
-	User deleteUser(@PathParam(USER_ID) String userId, @QueryParam(PWD) String pwd, @QueryParam(HAS_CACHE) boolean noCache);
+	User deleteUser(@PathParam(USER_ID) String userId, @QueryParam(PWD) String pwd, @QueryParam(HAS_CACHE) boolean hasCache);
 	
 	
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	List<User> searchUsers(@QueryParam(QUERY) String pattern, @QueryParam(HAS_CACHE) boolean noCache);
+	List<User> searchUsers(@QueryParam(QUERY) String pattern, @QueryParam(HAS_CACHE) boolean hasCache);
 }
