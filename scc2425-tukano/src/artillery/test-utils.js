@@ -6,7 +6,8 @@
 module.exports = {
   printStatus: printStatus,
   uploadRandomizedUser,
-  processRegisterReply
+  processRegisterReply,
+  uploadUserWithCount
 }
 
 
@@ -14,7 +15,7 @@ const fs = require('fs') // Needed for access to blobs.
 
 var registeredUsers = []
 var images = []
-
+var userNameCount = 0;
 // All endpoints starting with the following prefixes will be aggregated in the same for the statistics
 var statsPrefix = [ ["/rest/media/","GET"],
 			["/rest/media","POST"]
@@ -87,7 +88,24 @@ function uploadRandomizedUser(requestParams, context, ee, next) {
     };
     requestParams.body = JSON.stringify(user);
     return next();
-} 
+}
+
+function uploadUserWithCount(requestParams, context, ee, next){
+    let username = "name" + userNameCount;
+    userNameCount++;
+    let pword = "easypass"
+    let email = username + "@campus.fct.unl.pt";
+    let displayName = username;
+
+    const user = {
+        userId: username,
+        pwd: pword,
+        email: email,
+        displayName: username
+    };
+    requestParams.body = JSON.stringify(user);
+    return next();
+}
 
 /*function printStatus (requestParams, response, context, ee, next) {
     // Check if the response is JSON

@@ -7,6 +7,7 @@ config:
   processor: ./test-utils.js
   variables:
     numActions: 2
+    hasCache: true
   phases:
     - name: "User-testing"
       duration: 1
@@ -33,7 +34,7 @@ scenarios:
      # - loop:
        # User creation
       - post:
-          url: /users/
+          url: /users/?hasCache={{ hasCache }}
           headers:
             Content-Type: application/json
           afterResponse: "printStatus"
@@ -43,7 +44,7 @@ scenarios:
             email: "kgallagher@gmail.com"
             displayName: "Gallagher"
       - post:
-          url: /users/
+          url: /users/?hasCache={{ hasCache }}
           headers:
             Content-Type: application/json
           afterResponse: "printStatus"
@@ -52,20 +53,81 @@ scenarios:
             pwd: "easypass"
             email: "smd@gmail.com"
             displayName: "SergioD"
+      - loop:
+        - post:
+            url: /users/?hasCache={{ hasCache }}
+            headers:
+              Content-Type: application/json
+              Accept: application/json
+            afterResponse: "printStatus"
+            beforeRequest: "uploadUserWithCount"
+        count: 10
       #User gets
+      - loop:
+        - get:
+            url: /users/kGallagher?pwd=easypass&hasCache={{ hasCache }}
+            headers:
+              "Content-Type": "application/json"
+            afterResponse: "printStatus"
+        count: 20
       - get:
-          url: /users/kGallagher?pwd=easypass
+          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
           headers:
             "Content-Type": "application/json"
           afterResponse: "printStatus"
       - get:
-          url: /users/SergioDuarte?pwd=easypass
+          url: /users/kGallagher?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/kGallagher?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/kGallagher?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/kGallagher?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/kGallagher?pwd=easypass&hasCache={{ hasCache }}
+          headers:
+            "Content-Type": "application/json"
+          afterResponse: "printStatus"
+      - get:
+          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
           headers:
             "Content-Type": "application/json"
           afterResponse: "printStatus"
       #User updates
       - put:
-          url: /users/kGallagher?pwd=easypass
+          url: /users/kGallagher?pwd=easypass&hasCache={{ hasCache }}
           headers:
             "Content-Type": "application/json"
           json:
@@ -75,18 +137,18 @@ scenarios:
             displayName: "Gallagher Updated"
           afterResponse: "printStatus"
       - get:
-          url: /users/kGallagher?pwd=newpass
+          url: /users/kGallagher?pwd=newpass&hasCache={{ hasCache }}
           headers:
             "Content-Type": "application/json"
           afterResponse: "printStatus"
       #User search
       - get:
-          url: /users/?query=Ga
+          url: /users/?query=Ga&hasCache={{ hasCache }}
           headers:
             "Content-Type": "application/json"
           afterResponse: "printStatus"
       - post:
-          url: /users/
+          url: /users/?hasCache={{ hasCache }}
           headers:
             Content-Type: application/json
           afterResponse: "printStatus"
@@ -96,18 +158,18 @@ scenarios:
             email: "kgallagher2@gmail.com"
             displayName: "Gallagher2"
       - get:
-          url: /users/?query=Ga
+          url: /users/?query=Ga&hasCache={{ hasCache }}
           headers:
             "Content-Type": "application/json"
           afterResponse: "printStatus"
       #User delete
       - delete:
-          url: /users/kGallagher?pwd=newpass
+          url: /users/kGallagher?pwd=newpass&hasCache={{ hasCache }}
           headers:
             "Content-Type": "application/json"
           afterResponse: "printStatus"
       - delete:
-          url: /users/SergioDuarte?pwd=easypass
+          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
           headers:
             "Content-Type": "application/json"
           afterResponse: "printStatus"

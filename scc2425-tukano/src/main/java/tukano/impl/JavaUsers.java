@@ -10,6 +10,7 @@ import static tukano.api.Result.ErrorCode.FORBIDDEN;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Timer;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
@@ -66,8 +67,8 @@ public class JavaUsers implements Users {
 				Log.info(()->String.format("\n\nCREATE USER (IN CACHE): %s\n\n", user.getUserId()));
 				var key = USER_PREFIX + user.getUserId();
 				var value = JSON.encode(user);
-				jedis.set(key, value);
-				jedis.expire(key, EXPIRATION_TIME);
+				jedis.setex(key, EXPIRATION_TIME, value);
+				//jedis.expire(key, EXPIRATION_TIME);
 			}
 		}
 		//return errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
@@ -84,7 +85,7 @@ public class JavaUsers implements Users {
 			return error(BAD_REQUEST);
 
 		//FOR okUser
-		if(pwd == ""){
+		if(pwd.isEmpty()){
 			return error(FORBIDDEN);
 		}
 
@@ -92,11 +93,16 @@ public class JavaUsers implements Users {
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 
 				var key = USER_PREFIX + userId;
+
+				long startCacheTime = System.nanoTime();
 				var value = jedis.get(key);
+				//long endCacheTime = System.nanoTime();
 				if (value != null) {
 					var user = JSON.decode(value, User.class);
-					jedis.expire(key, EXPIRATION_TIME);
+					//jedis.expire(key, EXPIRATION_TIME);
 					Log.info(() -> String.format("\n\nGET USER (IN CACHE): %s\n\n", user.getUserId()));
+					long endCacheTime = System.nanoTime();
+					Log.info(() -> String.format("\nCache Access Time: %d ms\n", (endCacheTime - startCacheTime) / 1_000_000)); // Convertendo para milissegundos
 					return Result.ok(user);
 				}
 
@@ -105,14 +111,19 @@ public class JavaUsers implements Users {
 				if (u.isOK()) {
 					Log.info(() -> String.format("\n\nPUTTING USER IN CACHE: %s\n\n", u.value().getUserId()));
 					var user = JSON.encode(u.value());
-					jedis.set(key, user);
-					jedis.expire(key, EXPIRATION_TIME);
+					jedis.setex(key,EXPIRATION_TIME, user);
+					//jedis.expire(key, EXPIRATION_TIME);
 				}
 
 				return u;
 			}
 		}else {
-			return validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
+			long startDBTime = System.nanoTime();
+			Result<User> result = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
+			long endDBTime = System.nanoTime();
+
+			Log.info(() -> String.format("\nDB Access Time: %d ms\n", (endDBTime - startDBTime) / 1_000_000)); // Convertendo para milissegundos
+			return result;
 		}
 	}
 
