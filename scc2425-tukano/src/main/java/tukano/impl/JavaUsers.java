@@ -1,30 +1,24 @@
 package tukano.impl;
 
-import static java.lang.String.format;
-import static tukano.api.Result.error;
-import static tukano.api.Result.errorOrResult;
-import static tukano.api.Result.errorOrValue;
-import static tukano.api.Result.ok;
-import static tukano.api.Result.ErrorCode.BAD_REQUEST;
-import static tukano.api.Result.ErrorCode.FORBIDDEN;
-
-import java.util.List;
-import java.util.Locale;
-import java.util.Timer;
-import java.util.concurrent.Executors;
-import java.util.logging.Logger;
-
 import com.azure.cosmos.CosmosContainer;
-import com.fasterxml.jackson.annotation.JsonAlias;
 import redis.clients.jedis.Jedis;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
-import tukano.impl.data.UserDAO;
-import utils.DB;
 import utils.CosmosDBLayer;
+import utils.DB;
 import utils.JSON;
 import utils.RedisCache;
+
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Executors;
+import java.util.logging.Logger;
+
+import static java.lang.String.format;
+import static tukano.api.Result.ErrorCode.BAD_REQUEST;
+import static tukano.api.Result.ErrorCode.FORBIDDEN;
+import static tukano.api.Result.*;
 
 public class JavaUsers implements Users {
 	private final String USER_PREFIX = "user:";
@@ -37,17 +31,20 @@ public class JavaUsers implements Users {
 	private static CosmosDBLayer cosmos;
 
 	private static CosmosContainer usersContainer;
+
+	private static final boolean isPostgree = true;
 	
 	synchronized public static Users getInstance() {
 		if( instance == null )
 			instance = new JavaUsers();
-
 		return instance;
 	}
 	
 	private JavaUsers() {
-		cosmos = CosmosDBLayer.getInstance();
-		usersContainer = cosmos.getDB().getContainer(Users.NAME);
+		if(!isPostgree){
+			cosmos = CosmosDBLayer.getInstance();
+			usersContainer = cosmos.getDB().getContainer(Users.NAME);
+		}
 	}
 
 
@@ -61,7 +58,13 @@ public class JavaUsers implements Users {
 		}
 
 		Locale.setDefault(Locale.US);
-		Result<String> res = errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
+		Result<String> res;
+		if(isPostgree){
+			res = errorOrValue( DB.insertOne( user), user.getUserId());
+		}else {
+			res = errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
+		}
+
 		if (res.isOK() && hasCache){
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 				Log.info(()->String.format("\n\nCREATE USER (IN CACHE): %s\n\n", user.getUserId()));
@@ -98,15 +101,20 @@ public class JavaUsers implements Users {
 				var value = jedis.get(key);
 				//long endCacheTime = System.nanoTime();
 				if (value != null) {
-					var user = JSON.decode(value, User.class);
+					//var user = JSON.decode(value, User.class);
 					//jedis.expire(key, EXPIRATION_TIME);
-					Log.info(() -> String.format("\n\nGET USER (IN CACHE): %s\n\n", user.getUserId()));
+					//Log.info(() -> String.format("\n\nGET USER (IN CACHE): %s\n\n", user.getUserId()));
 					long endCacheTime = System.nanoTime();
 					Log.info(() -> String.format("\nCache Access Time: %d ms\n", (endCacheTime - startCacheTime) / 1_000_000)); // Convertendo para milissegundos
-					return Result.ok(user);
+					return Result.ok(JSON.decode(value, User.class));
 				}
 
-				Result<User> u = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
+				Result<User> u;
+				if(isPostgree){
+					u = validatedUserOrError( DB.getOne( userId, User.class), pwd);
+				}else{
+					u = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
+				}
 
 				if (u.isOK()) {
 					Log.info(() -> String.format("\n\nPUTTING USER IN CACHE: %s\n\n", u.value().getUserId()));
@@ -119,7 +127,13 @@ public class JavaUsers implements Users {
 			}
 		}else {
 			long startDBTime = System.nanoTime();
-			Result<User> result = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
+			Result<User> result;
+
+			if(isPostgree){
+				result = validatedUserOrError( DB.getOne( userId, User.class), pwd);
+			}else {
+				result = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
+			}
 			long endDBTime = System.nanoTime();
 
 			Log.info(() -> String.format("\nDB Access Time: %d ms\n", (endDBTime - startDBTime) / 1_000_000)); // Convertendo para milissegundos
@@ -143,31 +157,51 @@ public class JavaUsers implements Users {
 				if (value != null) {
 					var user = JSON.decode(value, User.class);
 					Log.info(() -> String.format("\n\nUPDATE USER (IN CACHE) (OLD USER): %s\n\n", user.getUserId()));
-					Result<User> res = errorOrValue(cosmos.updateOne(user.updateFrom(other), usersContainer), other);
+					Result<User> res;
+					if(isPostgree){
+						res = errorOrValue(DB.updateOne( user.updateFrom(other)), other);
+					}
+					else{
+						res = errorOrValue(cosmos.updateOne(user.updateFrom(other), usersContainer), other);
+					}
 
 					if (res.isOK()) {
 						var newValue = JSON.encode(res.value());
-						jedis.set(key, newValue);
-						jedis.expire(key, EXPIRATION_TIME);
+						jedis.setex(key,EXPIRATION_TIME, newValue);
+						//jedis.expire(key, EXPIRATION_TIME);
 					}
 					return res;
 				} else {
 
-					Result<User> res = errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
+					Result<User> res;
+					if(isPostgree){
+						res = errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), pwd), user -> DB.updateOne( user.updateFrom(other)));
+					}else{
+
+						res = errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
+					}
+
 
 					if (res.isOK()) {
 						Log.info(() -> String.format("\n\nPUTTING USER UPDATE IN CACHE: %s\n\n", res.value().getUserId()));
 						var key1 = USER_PREFIX + res.value().getUserId();
 						var value1 = JSON.encode(res.value());
-						jedis.set(key1, value1);
-						jedis.expire(key, EXPIRATION_TIME);
+						jedis.setex(key1,EXPIRATION_TIME, value1);
+						//jedis.expire(key, EXPIRATION_TIME);
 
 					}
 					return res;
 				}
 			}
 		}else{
-			return errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
+			Result<User> res;
+			if(isPostgree){
+				res = errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), pwd), user -> DB.updateOne( user.updateFrom(other)));
+			}else{
+
+				res = errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
+			}
+			return res;
 		}
 	}
 
@@ -178,9 +212,15 @@ public class JavaUsers implements Users {
 		if (userId == null || pwd == null )
 			return error(BAD_REQUEST);
 
-		Result<User> res = cosmos.getOne(userId, User.class, usersContainer);
+		Result<User> res;
+		if(isPostgree){
+			res = DB.getOne( userId, User.class);
+		}else{
+			res = cosmos.getOne(userId, User.class, usersContainer);
+		}
 
 		//TODO ESCLARECER A SITUACÂO DO RETURN
+
 		return errorOrResult( validatedUserOrError(res, pwd), user -> {
 
 			// Delete user shorts and related info asynchronously in a separate thread
@@ -189,8 +229,12 @@ public class JavaUsers implements Users {
 				JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId), hasCache);
 			}).start();
 
+			if(isPostgree){
+				DB.deleteOne( user);
+			}else{
+				cosmos.deleteOne(user, usersContainer);
+			}
 			//Result<User> res = cosmos.getOne(userId, User.class);
-			cosmos.deleteOne(user, usersContainer);
 			if(hasCache) {
 				Log.info(() -> String.format("\n\nDELETE USER (IN CACHE): %s\n\n", user.getUserId()));
 				try (Jedis jedis = RedisCache.getCachePool().getResource()) {
@@ -212,13 +256,24 @@ public class JavaUsers implements Users {
 		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
 
 		//TODO TEMOS MESMO QUE TER O .TOUPPSERCASE() no patter? Não funciona com ele :)
-		var query = format("SELECT * FROM users u WHERE u.id LIKE '%%%s%%'", pattern);
-		var hits = cosmos.query(User.class, query, usersContainer);
-				//.stream()
-				//.map(User::copyWithoutPassword)
-				//.toList();
+		//TODO VER COMO FAZER A CENA DE RETORNAR MESMO O OBJETO USER
 
-		return ok(hits.value().stream().toList());
+		if(isPostgree){
+			var query = format("SELECT * FROM users u WHERE UPPER(u.id) LIKE '%%%s%%'", pattern.toUpperCase());
+			var hits = DB.sql(query, User.class)
+					.stream()
+					.map(User::copyWithoutPassword)
+					.toList();
+			return ok(hits);
+		}else{
+			var query = format("SELECT * FROM users u WHERE u.id LIKE '%%%s%%'", pattern);
+			var hits = cosmos.query(User.class, query, usersContainer);
+			//.stream()
+			//.map(User::copyWithoutPassword)
+			//.toList();
+
+			return ok(hits.value().stream().toList());
+		}
 	}
 
 	

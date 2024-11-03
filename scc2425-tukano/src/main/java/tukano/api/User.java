@@ -3,11 +3,14 @@ package tukano.api;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import org.hibernate.annotations.PartitionKey;
+import jakarta.persistence.Table;
 
 
+@Entity
+@Table(name="users")
 public class User {
 
+	@Id
 	@JsonProperty("id")
 	private String id;
 	private String pwd;

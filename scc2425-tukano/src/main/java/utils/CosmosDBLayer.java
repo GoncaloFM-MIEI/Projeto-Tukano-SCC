@@ -5,21 +5,18 @@ import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
 import tukano.api.Result;
-import tukano.impl.JavaUsers;
 
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-import static java.lang.String.format;
-
 
 public class CosmosDBLayer {
 	private static Logger Log = Logger.getLogger(CosmosDBLayer.class.getName());
 
-	private static final String CONNECTION_URL = "https://cosmos60333.documents.azure.com:443/"; // replace with your own
-	private static final String DB_KEY = "l86Y7Ro3YQA0bXlgYnAtIz20QY8UoJJXkppLCiohcA5b9mpFY8UV5bWkEHK9htQYxvmSefn02CkrACDb2sBvwg==";
-	private static final String DB_NAME = "tukano60333";
+	private static final String CONNECTION_URL = "https://scc60532.documents.azure.com:443/"; // replace with your own
+	private static final String DB_KEY = "W1yew7LEPk7tn5cascUfn14MEFwlxXynE3EPk0bna6vwRqeo9exkRA7Ljm3QN0W7ScgwgTR92m5QACDbdj7C6A==";
+	private static final String DB_NAME = "scc60532";
 	private static String containerName;
 
 	private static CosmosDBLayer instance;

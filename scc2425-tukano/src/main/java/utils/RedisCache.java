@@ -4,8 +4,8 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 
 public class RedisCache {
-    private static final String RedisHostname = "redis60333.redis.cache.windows.net";
-    private static final String RedisKey = "hHslolMfbxOQoWOBNwNqR6J7jNxw86BkrAzCaBFIBLI=";
+    private static final String RedisHostname = "scc60532cache.redis.cache.windows.net";
+    private static final String RedisKey = "SsP18xc0Ci2KxawpOhde0N8p81yyr7N7EAzCaNRuP6E=";
     private static final int REDIS_PORT = 6380;
     private static final int REDIS_TIMEOUT = 1000;
     private static final boolean Redis_USE_TLS = true;

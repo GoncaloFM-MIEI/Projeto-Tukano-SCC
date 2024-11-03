@@ -1,5 +1,5 @@
 config:
-  target: http://127.0.0.1:8080/tukano/rest
+  target: http://172.30.52.142:8080/tukano/rest
   plugins:
     metrics-by-endpoint: {}
 #  http:
@@ -7,7 +7,7 @@ config:
   processor: ./test-utils.js
   variables:
     numActions: 2
-    hasCache: true
+    hasCache: false
   phases:
     - name: "User-testing"
       duration: 1
@@ -53,15 +53,15 @@ scenarios:
             pwd: "easypass"
             email: "smd@gmail.com"
             displayName: "SergioD"
-      - loop:
-        - post:
-            url: /users/?hasCache={{ hasCache }}
-            headers:
-              Content-Type: application/json
-              Accept: application/json
-            afterResponse: "printStatus"
-            beforeRequest: "uploadUserWithCount"
-        count: 10
+#      - loop:
+#        - post:
+#            url: /users/?hasCache={{ hasCache }}
+#            headers:
+#              Content-Type: application/json
+#              Accept: application/json
+#            afterResponse: "printStatus"
+#            beforeRequest: "uploadUserWithCount"
+#        count: 10
       #User gets
       - loop:
         - get:
@@ -163,15 +163,15 @@ scenarios:
             "Content-Type": "application/json"
           afterResponse: "printStatus"
       #User delete
-      - delete:
-          url: /users/kGallagher?pwd=newpass&hasCache={{ hasCache }}
-          headers:
-            "Content-Type": "application/json"
-          afterResponse: "printStatus"
-      - delete:
-          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
-          headers:
-            "Content-Type": "application/json"
-          afterResponse: "printStatus"
+#      - delete:
+#          url: /users/kGallagher?pwd=newpass&hasCache={{ hasCache }}
+#          headers:
+#            "Content-Type": "application/json"
+#          afterResponse: "printStatus"
+#      - delete:
+#          url: /users/SergioDuarte?pwd=easypass&hasCache={{ hasCache }}
+#          headers:
+#            "Content-Type": "application/json"
+#          afterResponse: "printStatus"
         #count: "{{ numActions }}"
 
