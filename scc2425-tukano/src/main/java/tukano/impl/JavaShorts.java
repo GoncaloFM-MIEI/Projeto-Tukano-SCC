@@ -79,32 +79,32 @@ public class JavaShorts implements Shorts {
 			if(isPostgree){
 				res = errorOrValue(DB.insertOne(shrt), s -> s.copyWithLikes_And_Token(0));
 			}else{
-				res =  errorOrValue(cosmos.insertOne(shrt, shortsContainer), s -> {
-					Log.info(()-> format("Inserted Short: %s", s));
-					return s.copyWithLikes_And_Token(0);
-				});
+				res =  errorOrValue(cosmos.insertOne(shrt, shortsContainer), s -> s.copyWithLikes_And_Token(0));
 			}
-
-
 
 
 			if(res.isOK() && hasCache) {
 				try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-					//Log.info(() -> format("\n\nSHORT CRIADO NA CACHE %s\n\n", shortId));
 
+					//Store short in cache
 					var key = SHORT_PREFIX + res.value().getShortId();
 					var value = JSON.encode(res.value());
 					jedis.setex(key,120, value);
 
 					var sKey = USER_SHORTS_LIST_PREFIX + userId;
 					var list = jedis.lrange(sKey, 0, -1);
+
 					if(!list.isEmpty()){
+						//if the list of usershorts is not empty just add it
 						//Log.info(() -> format("\n\nLISTA DE SHORTS DO USER NÃO ESTA VAZIA %s\n\n", shortId));
 						jedis.lpush(sKey, JSON.encode(res.value().getShortId()));
 						jedis.expire(sKey, 120);
 					}else{
+						//if the list of usershorts is empty there are two options, or it's the first user short
+						// or the remaining shorts have expired from cache
 						List<Map> userShorts;
 
+						//get the userShorts from the DB
 						if(isPostgree){
 							var query = format("SELECT s.id FROM short s WHERE s.ownerId = '%s'", userId);
 							userShorts =  DB.sql( query, Map.class);
@@ -115,6 +115,8 @@ public class JavaShorts implements Shorts {
 
 						List<String> ids = new ArrayList<>();
 
+						//if it's the first short of the user just add it to the cache
+						//else just get the list of the shorts (that already contains the new one) and store it in cache
 						if (userShorts.isEmpty()) {
 							ids.add(JSON.encode(res.value().getShortId()));
 						}else{
@@ -142,27 +144,23 @@ public class JavaShorts implements Shorts {
 
 		if(hasCache){
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				//Pipeline pipeline = jedis.pipelined();
 				Long  likesCount;
 				var lKey = COUNTER_PREFIX + shortId;
 				var key = SHORT_PREFIX + shortId;
-				//var likes = jedis.get(lKey);
 
+				//get as mget for more efficiency calling jedis
 				List<String> values = jedis.mget(key, lKey);
 				String value = values.get(0);
 				String likes = values.get(1);
 
 			/*
 			Checking existence of likes in cache
-			- If likes counter exist then get and renew expire time
+			- If likes counter exist then get
 			- else get from likes from DB and set value in cache
 			*/
 				if(likes != null) {
 					likesCount = JSON.decode(likes, Long.class);
-					//Log.info(() -> format("\n\nCOUNTER DE LIKES EXISTIA %d\n\n", likesCount));
-					//jedis.expire(lKey, 120);
 				}else {
-					//Log.info(() -> format("\n\nCOUNTER DE LIKES NÃO EXISTIA %s\n\n", shortId));
 					List<Likes> likesOnDB;
 					if(isPostgree){
 						var query = format("SELECT * FROM likes l WHERE l.shortId = '%s'", shortId);
@@ -172,13 +170,8 @@ public class JavaShorts implements Shorts {
 						likesOnDB = cosmos.query(Likes.class, query, likesContainer).value();
 					}
 
-					//if(likesOnDB.isOK()) {
 					likesCount = likesOnDB.isEmpty() ? 0 : (long) likesOnDB.size();
 					jedis.setex(lKey,120, String.valueOf(likesCount));
-						//pipeline.expire(lKey, 120);
-					//} else {
-					//	likesCount = 0L;
-					//}
 				}
 
 			/*
@@ -186,17 +179,7 @@ public class JavaShorts implements Shorts {
 			- if exists then extend expire time and return
 			with the likes count retrieved earlier
 			 */
-
-				//var value = jedis.get(key);
-
 				if(value != null) {
-					//Log.info(() -> format("\n\nGET SHORT DA CACHE %s\n\n", shortId));
-					//var shortToGet = JSON.decode(value, Short.class);
-					//jedis.expire(key, 120);
-
-					//var lKey = "counter:" + shortId;
-					//var likes = jedis.get(lKey);
-
 					Short shortToGetWithLikes = JSON.decode(value, Short.class).copyWithLikes_And_Token(likesCount);
 					return ok(shortToGetWithLikes);
 				}
@@ -209,11 +192,8 @@ public class JavaShorts implements Shorts {
 					});
 				}else{
 					return errorOrResult( cosmos.getOne(shortId, Short.class, shortsContainer), shrt -> {
-						//Log.info(() -> format("\n\nGET SHORT NA DB %s\n\n", shortId));
 						var val = JSON.encode(shrt);
 						jedis.setex(key,120, val);
-						//pipeline.expire(key,120);
-						//pipeline.sync();
 						Short shortToGetWithLikes = shrt.copyWithLikes_And_Token(likesCount);
 						return ok(shortToGetWithLikes);
 					});
@@ -234,8 +214,6 @@ public class JavaShorts implements Shorts {
 			}
 
 		}
-
-
 	}
 
 
@@ -245,7 +223,6 @@ public class JavaShorts implements Shorts {
 
 		if(isPostgree){
 			return errorOrResult( getShort(shortId, hasCache), shrt -> {
-
 				return errorOrResult( okUser( shrt.getOwnerId(), password, hasCache), user -> {
 					return DB.transaction( hibernate -> {
 
@@ -316,7 +293,7 @@ public class JavaShorts implements Shorts {
 							//fKeys.forEach(fKey -> jedis.lrem(fKey, 0, shortId));
 						}
 					}
-					return JavaBlobs.getInstance().delete(shrt.getBlobUrl(), Token.get(shrt.getBlobUrl()) );
+					return JavaBlobs.getInstance().delete(shrt.getBlobUrl(), Token.get(shrt.getBlobUrl()));
 				});
 			});
 		}
@@ -335,11 +312,6 @@ public class JavaShorts implements Shorts {
 				if(!value.isEmpty()){
 					//Log.info(() -> format("\n\nGET SHORTS: USER SHORTS EXISTEM NA CACHE %s\n\n", userId));
 					List<String> res = value.stream().map(shrt -> JSON.decode(shrt, String.class)).toList();
-//					for (var shrt: value){
-//						var shortObj = JSON.decode(shrt, String.class);
-//						res.add(shortObj);
-//					}
-					//jedis.expire(key,120);
 					return ok(res);
 				}
 
@@ -347,28 +319,24 @@ public class JavaShorts implements Shorts {
 				List<String> ids;
 				if(isPostgree){
 					var query = format("SELECT s.id FROM short s WHERE s.ownerId = '%s'", userId);
-					ids = errorOrValue( okUser(userId, hasCache), DB.sql( query, String.class)).value();
-					jedis.rpush(key, ids.stream().map(JSON::encode).toArray(String[]::new));
+					ids = errorOrValue( okUser(userId, true), DB.sql( query, String.class)).value();
 				}else{
 					var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
-					List<Map> res = errorOrValue( okUser(userId, hasCache), cosmos.query(Map.class, query, shortsContainer)).value();
+					List<Map> res = errorOrValue( okUser(userId, true), cosmos.query(Map.class, query, shortsContainer)).value();
 					ids = res.stream().map(result -> result.get("id").toString()).toList();
-					jedis.rpush(key, ids.stream().map(JSON::encode).toArray(String[]::new));
 				}
 
-//				for(String id : ids){
-//					jedis.lpush(key, JSON.encode(id));
-//				}
-				//jedis.expire(key,120);
+				jedis.rpush(key, ids.stream().map(JSON::encode).toArray(String[]::new));
+				jedis.expire(key,120);
 				return Result.ok(ids);
 			}
 		}else{
 			if(isPostgree){
 				var query = format("SELECT s.shortId FROM short s WHERE s.ownerId = '%s'", userId);
-				return errorOrValue( okUser(userId, hasCache), DB.sql( query, String.class));
+				return errorOrValue( okUser(userId, false), DB.sql( query, String.class));
 			}else{
 				var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
-				List<Map> res = errorOrValue( okUser(userId, hasCache), cosmos.query(Map.class, query, shortsContainer)).value();
+				List<Map> res = errorOrValue( okUser(userId, false), cosmos.query(Map.class, query, shortsContainer)).value();
 				List<String> ids = res.stream().map(result -> result.get("id").toString()).toList();
 				return Result.ok(ids);
 			}
@@ -395,7 +363,6 @@ public class JavaShorts implements Shorts {
 		
 		if(res.isOK() && hasCache){
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				//Pipeline pipe = jedis.pipelined();
 
 				var key = FOLLOWERS_PREFIX + userId2;
 				List<String> followersList = jedis.lrange(key, 0, -1);
@@ -403,35 +370,31 @@ public class JavaShorts implements Shorts {
 					Log.info(() -> format("\n\nFOLLOW: LISTA DE FOLLOWERS EXISTE %s\n\n", userId1));
 					if (isFollowing) {
 						jedis.lpush(key, JSON.encode(userId1));
-						jedis.expire(key,120);
 					}else{
 						jedis.lrem(key,1, JSON.encode(userId1));
 					}
 				}else {
-
-					List<String> fol;
+					List<String> followers;
 					if(isPostgree){
 						Log.info(() -> format("\n\nFOLLOW: LISTA DE FOLLOWERS NÃO EXISTE %s\n\n", userId1));
 						var query = format("SELECT f.follower FROM following f WHERE f.followee = '%s'", userId2);
-						fol = errorOrValue( okUser(userId2, password, hasCache), DB.sql(query, String.class)).value();
-						Log.info(() -> format("\n\nFOLLOW: LISTA DE FOLLOWERS NÃO EXISTE %s\n\n", fol));
+						followers = errorOrValue( okUser(userId2, password, hasCache), DB.sql(query, String.class)).value();
+						Log.info(() -> format("\n\nFOLLOW: LISTA DE FOLLOWERS NÃO EXISTE %s\n\n", followers));
 					}else{
 						var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId2);
-						List<Map> followers = errorOrValue( okUser(userId2, hasCache), cosmos.query(Map.class, query, followingContainer)).value();
-						fol = followers.stream().map(result -> result.get("follower").toString()).toList();
+						List<Map> fList = errorOrValue( okUser(userId2, hasCache), cosmos.query(Map.class, query, followingContainer)).value();
+						followers = fList.stream().map(result -> result.get("follower").toString()).toList();
 					}
 
-
 					List<String> ids = new ArrayList<>();
-					if (fol.isEmpty()) {
+					if (followers.isEmpty()) {
 						ids.add(JSON.encode(userId1));
 					}else{
-						ids = fol;
+						ids = followers;
 					}
 					jedis.rpush(key, ids.stream().map(JSON::encode).toArray(String[]::new));
 					jedis.expire(key,120);
 				}
-				//pipe.sync();
 			}
 		}
 
@@ -447,15 +410,6 @@ public class JavaShorts implements Shorts {
 				var key = FOLLOWERS_PREFIX + userId;
 				List<String> followersList = jedis.lrange(key, 0, -1);
 				if (!followersList.isEmpty()) {
-					//Log.info(() -> format("\n\nFOLLOWERS: LISTA DE FOLLOWERS EXISTE NA CACHE %s\n\n", userId));
-					//List<String> res = new ArrayList<>();
-					//List<String> res = followersList.stream()
-					//		.map(f -> JSON.decode(f, String.class))
-					//		.toList();
-					//for (String f : followersList) {
-					//	res.add(JSON.decode(f, String.class));
-					//}
-					//jedis.expire(key,120);
 					return ok(followersList.stream()
 							.map(f -> JSON.decode(f, String.class))
 							.toList());
@@ -464,15 +418,13 @@ public class JavaShorts implements Shorts {
 				List<String> ids;
 				if(isPostgree){
 					var query = format("SELECT f.follower FROM following f WHERE f.followee = '%s'", userId);
-					 ids = errorOrValue( okUser(userId, password, hasCache), DB.sql(query, String.class)).value();
+					 ids = errorOrValue( okUser(userId, password, true), DB.sql(query, String.class)).value();
 				}else{
 					var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);
-					List<Map> res = errorOrValue(okUser(userId, hasCache), cosmos.query(Map.class, query, followingContainer)).value();
+					List<Map> res = errorOrValue(okUser(userId, true), cosmos.query(Map.class, query, followingContainer)).value();
 					ids = res.stream().map(result -> result.get("follower").toString()).toList();
 				}
-				//for (String id : ids) {
-				//	jedis.lpush(key, JSON.encode(id));
-				//}
+
 				jedis.rpush(key, ids.stream().map(JSON::encode).toArray(String[]::new));
 				jedis.expire(key, 120);
 				return Result.ok(ids);
@@ -480,10 +432,10 @@ public class JavaShorts implements Shorts {
 		}else {
 			if(isPostgree){
 				var query = format("SELECT f.follower FROM following f WHERE f.followee = '%s'", userId);
-				return errorOrValue( okUser(userId, password, hasCache), DB.sql(query, String.class));
+				return errorOrValue( okUser(userId, password, false), DB.sql(query, String.class));
 			}else{
 				var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);
-				List<Map> res = errorOrValue( okUser(userId, hasCache), cosmos.query(Map.class, query, followingContainer)).value();
+				List<Map> res = errorOrValue( okUser(userId, false), cosmos.query(Map.class, query, followingContainer)).value();
 				List<String> ids = res.stream().map(result -> result.get("follower").toString()).toList();
 				return Result.ok(ids);
 			}
@@ -509,10 +461,8 @@ public class JavaShorts implements Shorts {
 			});
 		}
 
-
 		if(res.isOK() && hasCache){
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				//Pipeline pipe = jedis.pipelined();
 
 				var key = SHORT_LIKES_LIST_PREFIX + shortId;
 				List<String> likesList = jedis.lrange(key, 0, -1);
@@ -527,15 +477,7 @@ public class JavaShorts implements Shorts {
 						jedis.lrem(key,1, JSON.encode(userId));
 					}
 				}else{
-					List<String> like;
-					if(isPostgree){
-						var query = format("SELECT l.userId FROM likes l WHERE l.shortId = '%s'", shortId);
-						like =  DB.sql(query, String.class);
-					}else{
-						var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
-						List<Map> likes = cosmos.query(Map.class, query, likesContainer).value();
-						like = likes.stream().map(result -> result.get("userId").toString()).toList();
-					}
+					List<String> like = getLikes(shortId,isPostgree);
 
 					List<String> ids = new ArrayList<>();
 					if (like.isEmpty()) {
@@ -557,28 +499,27 @@ public class JavaShorts implements Shorts {
 					//Log.info(() -> format("\n\nLIKE: COUNTER DE LIKES EXISTE NA CACHE %d\n\n", newVal));
 				}else {
 
-					List<String> like;
-					if(isPostgree){
-						var query = format("SELECT l.userId FROM likes l WHERE l.shortId = '%s'", shortId);
-						like =  DB.sql(query, String.class);
-					}else{
-						var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
-						List<Map> likes = cosmos.query(Map.class, query, likesContainer).value();
-						like = likes.stream().map(result -> result.get("userId").toString()).toList();
-					}
-
-					//var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
-					//List<Map> likes = cosmos.query(Map.class, query, likesContainer).value();
+					List<String> like = getLikes(shortId, isPostgree);
 
 					long likesCount = like.isEmpty() ? 0 : like.size();
 					jedis.setex(lKey,120, String.valueOf(likesCount));
 				}
 
-				//pipe.sync();
 			}
 		}
 
 		return res;
+	}
+
+	private List<String> getLikes(String shortId, boolean isPostgree){
+		if(isPostgree){
+			var query = format("SELECT l.userId FROM likes l WHERE l.shortId = '%s'", shortId);
+			return DB.sql(query, String.class);
+		}else{
+			var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
+			List<Map> likes = cosmos.query(Map.class, query, likesContainer).value();
+			return likes.stream().map(result -> result.get("userId").toString()).toList();
+		}
 	}
 
 	//TODO VER ISTO COM O STOR
@@ -588,51 +529,36 @@ public class JavaShorts implements Shorts {
 
 		if(hasCache) {
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-				//Pipeline pipe = jedis.pipelined();
+
 				var key = SHORT_LIKES_LIST_PREFIX + shortId;
 				var likesList = jedis.lrange(key, 0, -1);
 				if (!likesList.isEmpty()) {
 					//Log.info(() -> format("\n\nLIKES: LISTA DE LIKES EXISTE NA CACHE %s\n\n", shortId));
-					List<String> res = new ArrayList<>();
-					for (String f : likesList) {
-						res.add(JSON.decode(f, String.class));
-					}
-					//jedis.expire(key,120);
-					return ok(res);
-
+					return ok(likesList.stream()
+									.map(f -> JSON.decode(f, String.class))
+									.collect(Collectors.toList())
+					);
 				}
 				//Log.info(() -> format("\n\nLIKES: LISTA DE LIKES NÃO EXISTE NA CACHE %s\n\n", shortId));
-				return errorOrResult(getShort(shortId, hasCache), shrt -> {
+				return errorOrResult(getShort(shortId, true), shrt -> {
 
-					List<String> ids;
-					if(isPostgree){
-						var query = format("SELECT l.userId FROM likes l WHERE l.shortId = '%s'", shortId);
-						ids =  DB.sql(query, String.class);
-					}else{
-						var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
-						List<Map> likes = cosmos.query(Map.class, query, likesContainer).value();
-						ids = likes.stream().map(result -> result.get("userId").toString()).toList();
-					}
+					List<String> ids = getLikes(shortId, isPostgree);
 
-					for (String id : ids) {
-						jedis.lpush(key, JSON.encode(id));
-					}
-					//pipe.expire(key, 120);
-					//pipe.sync();
+					jedis.rpush(key, ids.stream().map(JSON::encode).toArray(String[]::new));
+					jedis.expire(key,120);
 					return Result.ok(ids);
 				});
 			}
 		}else{
-
 			if(isPostgree){
-				return errorOrResult( getShort(shortId, hasCache), shrt -> {
+				return errorOrResult( getShort(shortId, false), shrt -> {
 
 					var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);
 
 					return errorOrValue( okUser( shrt.getOwnerId(), password , hasCache), DB.sql(query, String.class));
 				});
 			}else {
-				return errorOrResult(getShort(shortId, hasCache), shrt -> {
+				return errorOrResult(getShort(shortId, false), shrt -> {
 					var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
 					List<Map> res = cosmos.query(Map.class, query, likesContainer).value();
 					List<String> ids = res.stream().map(result -> result.get("userId").toString()).toList();
@@ -720,41 +646,6 @@ public class JavaShorts implements Shorts {
 		if( ! Token.isValid( token, userId ) )
 			return error(FORBIDDEN);
 		try {
-
-			//delete shorts
-			//var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);
-			var query1 = format("SELECT * FROM Short s WHERE s.ownerId = '%s'", userId);
-			List<Short> shorts = cosmos.query(Short.class, query1, shortsContainer).value();
-			for(Short s : shorts){
-				cosmos.deleteOne(s, shortsContainer);
-				if(hasCache){
-					try (Jedis jedis = RedisCache.getCachePool().getResource()) {
-						var key = SHORT_LIKES_LIST_PREFIX + s.getShortId();
-						jedis.del(key);
-						var sKey = SHORT_PREFIX + s.getShortId();
-						jedis.del(sKey);
-						var cKey = COUNTER_PREFIX + s.getShortId();
-						jedis.del(cKey);
-					}
-				}
-			}
-
-			//delete follows
-			//var query2 = format("DELETE Following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);
-			var query2 = format("SELECT * FROM Following f WHERE f.follower = '%s' OR f.followe = '%s'",userId, userId);
-			List<Following> following = cosmos.query(Following.class, query2, followingContainer).value();
-			for(Following f : following){
-				cosmos.deleteOne(f, followingContainer);
-			}
-
-			//delete likes
-			//var query3 = format("DELETE Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
-			var query3 = format("SELECT * FROM Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
-			List<Likes> likes = cosmos.query(Likes.class, query3, likesContainer).value();
-			for(Likes l: likes){
-				cosmos.deleteOne(l,likesContainer );
-			}
-
 			if(hasCache) {
 				try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 					var sKey = USER_SHORTS_LIST_PREFIX + userId;
@@ -764,6 +655,57 @@ public class JavaShorts implements Shorts {
 				}
 			}
 
+			if(isPostgree){
+				return DB.transaction( (hibernate) -> {
+
+					//delete shorts
+					var query1 = format("DELETE shorts s WHERE s.ownerId = '%s'", userId);
+					hibernate.createQuery(query1, Short.class).executeUpdate();
+
+					//delete follows
+					var query2 = format("DELETE following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);
+					hibernate.createQuery(query2, Following.class).executeUpdate();
+
+					//delete likes
+					var query3 = format("DELETE likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
+					hibernate.createQuery(query3, Likes.class).executeUpdate();
+
+				});
+			}else{
+				//delete shorts
+				//var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);
+				var query1 = format("SELECT * FROM Short s WHERE s.ownerId = '%s'", userId);
+				List<Short> shorts = cosmos.query(Short.class, query1, shortsContainer).value();
+				for(Short s : shorts){
+					cosmos.deleteOne(s, shortsContainer);
+					if(hasCache){
+						try (Jedis jedis = RedisCache.getCachePool().getResource()) {
+							var key = SHORT_LIKES_LIST_PREFIX + s.getShortId();
+							jedis.del(key);
+							var sKey = SHORT_PREFIX + s.getShortId();
+							jedis.del(sKey);
+							var cKey = COUNTER_PREFIX + s.getShortId();
+							jedis.del(cKey);
+						}
+					}
+				}
+
+				//delete follows
+				//var query2 = format("DELETE Following f WHERE f.follower = '%s' OR f.followee = '%s'", userId, userId);
+				var query2 = format("SELECT * FROM Following f WHERE f.follower = '%s' OR f.followe = '%s'",userId, userId);
+				List<Following> following = cosmos.query(Following.class, query2, followingContainer).value();
+				for(Following f : following){
+					cosmos.deleteOne(f, followingContainer);
+				}
+
+				//delete likes
+				//var query3 = format("DELETE Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
+				var query3 = format("SELECT * FROM Likes l WHERE l.ownerId = '%s' OR l.userId = '%s'", userId, userId);
+				List<Likes> likes = cosmos.query(Likes.class, query3, likesContainer).value();
+				for(Likes l: likes){
+					cosmos.deleteOne(l,likesContainer );
+				}
+			}
 
 		} catch (Exception e) {
 			return Result.error(INTERNAL_ERROR);

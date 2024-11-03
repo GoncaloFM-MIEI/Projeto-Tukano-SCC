@@ -65,16 +65,15 @@ public class JavaUsers implements Users {
 			res = errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
 		}
 
+		//Put the user in the cache after putting on DB
 		if (res.isOK() && hasCache){
 			try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 				Log.info(()->String.format("\n\nCREATE USER (IN CACHE): %s\n\n", user.getUserId()));
 				var key = USER_PREFIX + user.getUserId();
 				var value = JSON.encode(user);
 				jedis.setex(key, EXPIRATION_TIME, value);
-				//jedis.expire(key, EXPIRATION_TIME);
 			}
 		}
-		//return errorOrValue(cosmos.insertOne(user, usersContainer), user.getUserId());
 
 		return res;
 
@@ -99,11 +98,11 @@ public class JavaUsers implements Users {
 
 				long startCacheTime = System.nanoTime();
 				var value = jedis.get(key);
-				//long endCacheTime = System.nanoTime();
+
+
+				//Get user from cache if exists
 				if (value != null) {
-					//var user = JSON.decode(value, User.class);
-					//jedis.expire(key, EXPIRATION_TIME);
-					//Log.info(() -> String.format("\n\nGET USER (IN CACHE): %s\n\n", user.getUserId()));
+					//TODO APENAS A CONTAGEM DO TEMPO
 					long endCacheTime = System.nanoTime();
 					Log.info(() -> String.format("\nCache Access Time: %d ms\n", (endCacheTime - startCacheTime) / 1_000_000)); // Convertendo para milissegundos
 					return Result.ok(JSON.decode(value, User.class));
@@ -115,12 +114,12 @@ public class JavaUsers implements Users {
 				}else{
 					u = validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd);
 				}
-
+				//If user dont exist in the cache, after getting him from the DB just put it in the cache again
 				if (u.isOK()) {
 					Log.info(() -> String.format("\n\nPUTTING USER IN CACHE: %s\n\n", u.value().getUserId()));
 					var user = JSON.encode(u.value());
 					jedis.setex(key,EXPIRATION_TIME, user);
-					//jedis.expire(key, EXPIRATION_TIME);
+
 				}
 
 				return u;
@@ -154,6 +153,7 @@ public class JavaUsers implements Users {
 				var key = USER_PREFIX + userId;
 				var value = jedis.get(key);
 
+				//if user exists in cache just get him to avoid getting him from the DB
 				if (value != null) {
 					var user = JSON.decode(value, User.class);
 					Log.info(() -> String.format("\n\nUPDATE USER (IN CACHE) (OLD USER): %s\n\n", user.getUserId()));
@@ -165,14 +165,15 @@ public class JavaUsers implements Users {
 						res = errorOrValue(cosmos.updateOne(user.updateFrom(other), usersContainer), other);
 					}
 
+					//after updating, just overrite the same key with the updated user
 					if (res.isOK()) {
 						var newValue = JSON.encode(res.value());
 						jedis.setex(key,EXPIRATION_TIME, newValue);
-						//jedis.expire(key, EXPIRATION_TIME);
 					}
 					return res;
 				} else {
 
+					// if user don't exist in cache just get him and update him
 					Result<User> res;
 					if(isPostgree){
 						res = errorOrResult( validatedUserOrError(DB.getOne( userId, User.class), pwd), user -> DB.updateOne( user.updateFrom(other)));
@@ -181,7 +182,7 @@ public class JavaUsers implements Users {
 						res = errorOrResult(validatedUserOrError(cosmos.getOne(userId, User.class, usersContainer), pwd), newUser -> cosmos.updateOne(newUser.updateFrom(other), usersContainer));
 					}
 
-
+					// after update put again on the cache
 					if (res.isOK()) {
 						Log.info(() -> String.format("\n\nPUTTING USER UPDATE IN CACHE: %s\n\n", res.value().getUserId()));
 						var key1 = USER_PREFIX + res.value().getUserId();
@@ -235,6 +236,7 @@ public class JavaUsers implements Users {
 				cosmos.deleteOne(user, usersContainer);
 			}
 			//Result<User> res = cosmos.getOne(userId, User.class);
+			//Delete user from cache
 			if(hasCache) {
 				Log.info(() -> String.format("\n\nDELETE USER (IN CACHE): %s\n\n", user.getUserId()));
 				try (Jedis jedis = RedisCache.getCachePool().getResource()) {
