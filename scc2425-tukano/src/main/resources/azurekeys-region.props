@@ -1,10 +1,4 @@
 # Date : 10/14/24, 10:16 AM
-BlobStoreConnection=DefaultEndpointsProtocol=https;AccountName=blobs60333;AccountKey=SyLcPVOBM3tUEFB5OIZWo4oAxMOA54SYZblJaFEab+bobrZrrgltYzkkImopCmmmFdBaKQ6r4lTl+AStYbWg3g==;EndpointSuffix=core.windows.net
-COSMOSDB_KEY=aKBjMmJEaGtd52CsBlEcOvnIcAcifOquOtMbTqCOWzd7d0vCWpk68GuhoPZd1v7HvTpshjeHUDluACDbxAJ8pg==
-COSMOSDB_URL=https://cosmos60333.documents.azure.com:443/
-COSMOSDB_DATABASE=tukano60333
-REDIS_KEY=D8kaoj3QFaaYCERdmByzz10SjbAOTRoPSAzCaNjeDds=
-REDIS_HOSTNAME=redis60333.redis.cache.windows.net
 HIBERNATE_CONFIG_FILE_PATH=/usr/local/tomcat/webapps/tukano/WEB-INF/classes/hibernate.cfg.xml
 #Put here the url you are going to use for the request, to ensure that the blob urls are given in the correct way
 BLOB_URL=https://tukano60333-60532.azurewebsites.net/rest

@@ -47,6 +47,7 @@ tukano\api\rest\RestBlobs.class
 test\Test.class
 tukano\rest\RestBlobsClient.class
 tukano\rest\RestShortsClient$4.class
+mgt\AzureManagement.class
 utils\IO.class
 tukano\rest\RestShortsClient.class
 tukano\rest\RestUsersClient$1.class

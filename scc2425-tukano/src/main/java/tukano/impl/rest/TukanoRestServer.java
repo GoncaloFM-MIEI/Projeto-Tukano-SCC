@@ -43,6 +43,7 @@ public class TukanoRestServer extends Application {
 //		singletons.add(new RestShortsResource());
 //		singletons.add(new RestBlobsResource());
 		Props.load("azurekeys-region.props");
+		Props.load("azurekeys-northeurope.props");
 
 //		serverURI = String.format(SERVER_BASE_URI, IP.hostname(), PORT);
 	}

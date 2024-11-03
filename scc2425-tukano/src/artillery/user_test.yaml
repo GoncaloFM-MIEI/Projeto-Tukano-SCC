@@ -1,5 +1,5 @@
 config:
-  target: http://172.30.52.142:8080/tukano/rest
+  target: https://tukano60333-60532.azurewebsites.net/rest
   plugins:
     metrics-by-endpoint: {}
 #  http:
