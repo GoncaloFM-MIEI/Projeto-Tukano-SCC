@@ -25,12 +25,13 @@ import tukano.impl.storage.BlobStorage;
 import tukano.impl.storage.FilesystemStorage;
 import utils.Hash;
 import utils.Hex;
+import utils.Props;
 
 public class JavaBlobs implements Blobs {
 	
 	private static Blobs instance;
 	private static Logger Log = Logger.getLogger(JavaBlobs.class.getName());
-	private String storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=scc60333;AccountKey=uSsAte+zIBE7ksI9fHdxXTrVCNwDPdU+h3DeJQIDF4kbJNsy/dPheUg2o5bktO34tTYpvthyyIZU+AStbX1y8w==;EndpointSuffix=core.windows.net";
+	private static final String storageConnectionString = Props.get("BlobStoreConnection", "");
 	private BlobContainerClient containerClient;
 
 	public String baseURI;
@@ -43,8 +44,8 @@ public class JavaBlobs implements Blobs {
 	}
 	
 	private JavaBlobs() {
-		storage = new FilesystemStorage();
-		baseURI = String.format("%s/%s/", TukanoRestServer.serverURI, Blobs.NAME);
+		//storage = new FilesystemStorage();
+		//baseURI = String.format("%s/%s/", TukanoRestServer.serverURI, Blobs.NAME);
 		// Get container client
 		this.containerClient = new BlobContainerClientBuilder()
 				.connectionString(storageConnectionString)

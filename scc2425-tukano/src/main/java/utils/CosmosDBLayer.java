@@ -14,9 +14,9 @@ import java.util.logging.Logger;
 public class CosmosDBLayer {
 	private static Logger Log = Logger.getLogger(CosmosDBLayer.class.getName());
 
-	private static final String CONNECTION_URL = "https://scc60532.documents.azure.com:443/"; // replace with your own
-	private static final String DB_KEY = "W1yew7LEPk7tn5cascUfn14MEFwlxXynE3EPk0bna6vwRqeo9exkRA7Ljm3QN0W7ScgwgTR92m5QACDbdj7C6A==";
-	private static final String DB_NAME = "scc60532";
+	private static final String CONNECTION_URL = Props.get("COSMOSDB_URL", "");; // replace with your own
+	private static final String DB_KEY = Props.get("COSMOSDB_KEY", "");
+	private static final String DB_NAME = Props.get("COSMOSDB_DATABASE", "");
 	private static String containerName;
 
 	private static CosmosDBLayer instance;

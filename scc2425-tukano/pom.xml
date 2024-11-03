@@ -1,6 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>scc2425</groupId>
 	<artifactId>tukano</artifactId>
@@ -31,33 +30,33 @@
 				<groupId>com.microsoft.azure</groupId>
 				<artifactId>azure-webapp-maven-plugin</artifactId>
 				<version>2.13.0</version>
-				<configuration>
-					<schemaVersion>V2</schemaVersion>
-					<pricingTier>F1</pricingTier>
-					<region>westeurope</region>
-					<runtime>
-						<os>linux</os>
-						<javaVersion>Java 17</javaVersion>
-						<webContainer>Tomcat 10.0</webContainer>
-					</runtime>
-					<deployment>
-						<resources>
-							<resource>
-								<directory>${project.basedir}/target</directory>
-								<includes>
-									<include>*.war</include>
-								</includes>
-							</resource>
-						</resources>
-					</deployment>
-					<resourceGroup>scc-backend-rg-smd</resourceGroup>
-					<appName>scc-backend-smd</appName>
-				</configuration>
+			    <configuration>
+			        <schemaVersion>V2</schemaVersion>
+			        <pricingTier>F1</pricingTier>
+			        <region>westeurope</region>
+			        <runtime>
+			            <os>linux</os>
+			            <javaVersion>Java 17</javaVersion>
+			            <webContainer>Tomcat 10.0</webContainer>
+			        </runtime>
+			        <deployment>
+			            <resources>
+			                <resource>
+			                    <directory>${project.basedir}/target</directory>
+			                    <includes>
+			                        <include>*.war</include>
+			                    </includes>
+			                </resource>
+			            </resources>
+			        </deployment>
+			        <resourceGroup>60333</resourceGroup>
+			        <appName>tukano60333-60532</appName>
+			    </configuration>
 			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
-					<archive></archive>
+					<archive/>
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
 					</descriptorRefs>
@@ -84,7 +83,7 @@
 				<version>2.1</version>
 				<configuration>
 					<!--><url>http://maven:s3cret@172.30.52.142:8080/manager/text</url><!-->
-					<url>http://maven:s3cret@172.30.52.142:8080/manager/text</url>
+					<url>https://tukano60333-60532.azurewebsites.net/manager/text</url>
 					<server>tomcat-docker</server>
 					<username>maven</username>
 					<password>s3cret</password>

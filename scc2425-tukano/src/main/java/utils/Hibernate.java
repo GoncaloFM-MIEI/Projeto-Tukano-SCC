@@ -22,7 +22,7 @@ import java.util.function.Function;
 public class Hibernate {
 //	private static Logger Log = Logger.getLogger(Hibernate.class.getName());
 
-	private static final String HIBERNATE_CFG_FILE = "/usr/local/tomcat/webapps/tukano/WEB-INF/classes/hibernate.cfg.xml";
+	private static final String HIBERNATE_CFG_FILE = Props.get("HIBERNATE_CONFIG_FILE_PATH", "");
 	private SessionFactory sessionFactory;
 	private static Hibernate instance;
 

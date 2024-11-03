@@ -5,10 +5,7 @@ import redis.clients.jedis.Jedis;
 import tukano.api.Result;
 import tukano.api.User;
 import tukano.api.Users;
-import utils.CosmosDBLayer;
-import utils.DB;
-import utils.JSON;
-import utils.RedisCache;
+import utils.*;
 
 import java.util.List;
 import java.util.Locale;
@@ -32,7 +29,7 @@ public class JavaUsers implements Users {
 
 	private static CosmosContainer usersContainer;
 
-	private static final boolean isPostgree = true;
+	private static final boolean isPostgree = "yes".equalsIgnoreCase(Props.get("USE_POSTGREE", ""));
 	
 	synchronized public static Users getInstance() {
 		if( instance == null )
@@ -269,12 +266,12 @@ public class JavaUsers implements Users {
 			return ok(hits);
 		}else{
 			var query = format("SELECT * FROM users u WHERE u.id LIKE '%%%s%%'", pattern);
-			var hits = cosmos.query(User.class, query, usersContainer);
-			//.stream()
-			//.map(User::copyWithoutPassword)
-			//.toList();
+			var hits = cosmos.query(User.class, query, usersContainer).value()
+							.stream()
+							.map(User::copyWithoutPassword)
+							.toList();
 
-			return ok(hits.value().stream().toList());
+			return ok(hits);
 		}
 	}
 

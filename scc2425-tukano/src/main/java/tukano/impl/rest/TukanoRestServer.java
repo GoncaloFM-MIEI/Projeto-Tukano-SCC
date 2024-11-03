@@ -11,6 +11,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import tukano.impl.Token;
 import utils.Args;
 import utils.IP;
+import utils.Props;
 
 import java.net.URI;
 import java.util.logging.Logger;
@@ -41,7 +42,7 @@ public class TukanoRestServer extends Application {
 //		singletons.add(new RestUsersResource());
 //		singletons.add(new RestShortsResource());
 //		singletons.add(new RestBlobsResource());
-
+		Props.load("azurekeys-region.props");
 
 //		serverURI = String.format(SERVER_BASE_URI, IP.hostname(), PORT);
 	}
