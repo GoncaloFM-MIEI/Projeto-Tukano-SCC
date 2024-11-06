@@ -1,7 +1,7 @@
-# Date : 03/11/24, 20:08
-BlobStoreConnection=DefaultEndpointsProtocol=https;AccountName=stormggfmnortheurope;AccountKey=rIxO+8u5bO3rGhk9+AcTlApsJfzohUHmrHwySdPDwtYvqvMHgQ28uAPUD5uVWIq98gyN60xBQGNV+AStBpvL4w==;EndpointSuffix=core.windows.net
-COSMOSDB_KEY=vtdBmhYOhXtNaJgBON8sAwCsbmeyLRYGeeHz6b6HAL0CL0tgXonAuAxvy73Czrq5aJfBRnJozcAHACDbxbiZpQ==
+# Date : 05/11/24, 23:42
+BlobStoreConnection=DefaultEndpointsProtocol=https;AccountName=stormggfmnortheurope;AccountKey=AtLTy1ef2JIL/FBnz7iZ9LqTRBEIj/mrBzwSxIdhJd5+B8wyWVQ6X09ovA7evxG9ddytvJDti8Kr+AStgJgF3g==;EndpointSuffix=core.windows.net
+COSMOSDB_KEY=KM5716jOfTdFHEfPUtB4EsPM3kF0xVe8VaSPv6jSldkbl37bw13NRaawIUDX3zjGAOFIePAl2r4KACDbKBbXFQ==
 COSMOSDB_URL=https://cosmosrmggfm.documents.azure.com:443/
 COSMOSDB_DATABASE=cosmosdbrmggfm
-REDIS_KEY=7Rbf1VkoUvbkw4LYfxtrMq13tTdHJeoaTAzCaDKNGxs=
+REDIS_KEY=l3DmXsBd0KY0bJHFLsvy6P5bu47ifDKABAzCaBwEJPg=
 REDIS_URL=redisrmggfmnortheurope.redis.cache.windows.net

@@ -37,7 +37,8 @@ public class JavaShorts implements Shorts {
 
 	private static String FOLLOWING_NAME = "following";
 
-	private static final boolean isPostgree = "yes".equalsIgnoreCase(Props.get("USE_POSTGREE", ""));
+	private static final boolean isPostgree = "true".equalsIgnoreCase(Props.get("USE_POSTGREE", ""));
+	private static final boolean hasCache = "true".equalsIgnoreCase(Props.get("HAS_CACHE", ""));
 
 	private static CosmosDBLayer cosmos;
 
@@ -64,12 +65,12 @@ public class JavaShorts implements Shorts {
 	
 	
 	@Override
-	public Result<Short> createShort(String userId, String password, boolean hasCache) {
+	public Result<Short> createShort(String userId, String password) {
 		Log.info(() -> format("createShort : userId = %s, pwd = %s\n", userId, password));
 
 		//TODO verificar se é este o url correto
 		String url = Props.get("BLOB_URL", "");
-		return errorOrResult( okUser(userId, password, hasCache), user -> {
+		return errorOrResult( okUser(userId, password), user -> {
 
 			var shortId = format("%s+%s", userId, UUID.randomUUID());
 			//var blobUrl = format("%s/%s/%s", TukanoRestServer.serverURI, Blobs.NAME, shortId);
@@ -84,7 +85,7 @@ public class JavaShorts implements Shorts {
 			}
 
 
-			if(res.isOK() && hasCache) {
+			if(res.isOK()) {
 				try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 
 					//Store short in cache
@@ -137,7 +138,7 @@ public class JavaShorts implements Shorts {
 	}
 
 	@Override
-	public Result<Short> getShort(String shortId, boolean hasCache) {
+	public Result<Short> getShort(String shortId) {
 		Log.info(() -> format("getShort : shortId = %s\n", shortId));
 
 		if( shortId == null )
@@ -219,12 +220,12 @@ public class JavaShorts implements Shorts {
 
 
 	@Override
-	public Result<Void> deleteShort(String shortId, String password, boolean hasCache) {
+	public Result<Void> deleteShort(String shortId, String password) {
 		Log.info(() -> format("deleteShort : shortId = %s, pwd = %s\n", shortId, password));
 
 		if(isPostgree){
-			return errorOrResult( getShort(shortId, hasCache), shrt -> {
-				return errorOrResult( okUser( shrt.getOwnerId(), password, hasCache), user -> {
+			return errorOrResult( getShort(shortId), shrt -> {
+				return errorOrResult( okUser( shrt.getOwnerId(), password), user -> {
 					return DB.transaction( hibernate -> {
 
 						hibernate.remove( shrt);
@@ -259,8 +260,8 @@ public class JavaShorts implements Shorts {
 				});
 			});
 		}else{
-			return errorOrResult( getShort(shortId, hasCache), shrt -> {
-				return errorOrResult( okUser( shrt.getOwnerId(), password, hasCache), user -> {
+			return errorOrResult( getShort(shortId), shrt -> {
+				return errorOrResult( okUser( shrt.getOwnerId(), password), user -> {
 					Result<?> res = cosmos.deleteOne( shrt, shortsContainer);
 					if(!res.isOK())
 						return Result.error(NOT_FOUND);
@@ -302,7 +303,7 @@ public class JavaShorts implements Shorts {
 
 	//TODO MOSTRAR AOS STORES PARA VER SE TA BOM
 	@Override
-	public Result<List<String>> getShorts(String userId, boolean hasCache) {
+	public Result<List<String>> getShorts(String userId) {
 		Log.info(() -> format("getShorts : userId = %s\n", userId));
 
 		if(hasCache){
@@ -320,10 +321,10 @@ public class JavaShorts implements Shorts {
 				List<String> ids;
 				if(isPostgree){
 					var query = format("SELECT s.id FROM short s WHERE s.ownerId = '%s'", userId);
-					ids = errorOrValue( okUser(userId, true), DB.sql( query, String.class)).value();
+					ids = errorOrValue( okUser(userId), DB.sql( query, String.class)).value();
 				}else{
 					var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
-					List<Map> res = errorOrValue( okUser(userId, true), cosmos.query(Map.class, query, shortsContainer)).value();
+					List<Map> res = errorOrValue( okUser(userId), cosmos.query(Map.class, query, shortsContainer)).value();
 					ids = res.stream().map(result -> result.get("id").toString()).toList();
 				}
 
@@ -337,10 +338,10 @@ public class JavaShorts implements Shorts {
 		}else{
 			if(isPostgree){
 				var query = format("SELECT s.shortId FROM short s WHERE s.ownerId = '%s'", userId);
-				return errorOrValue( okUser(userId, false), DB.sql( query, String.class));
+				return errorOrValue( okUser(userId), DB.sql( query, String.class));
 			}else{
 				var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
-				List<Map> res = errorOrValue( okUser(userId, false), cosmos.query(Map.class, query, shortsContainer)).value();
+				List<Map> res = errorOrValue( okUser(userId), cosmos.query(Map.class, query, shortsContainer)).value();
 				List<String> ids = res.stream().map(result -> result.get("id").toString()).toList();
 				return Result.ok(ids);
 			}
@@ -349,19 +350,19 @@ public class JavaShorts implements Shorts {
 	}
 
 	@Override
-	public Result<Void> follow(String userId1, String userId2, boolean isFollowing, String password, boolean hasCache) {
+	public Result<Void> follow(String userId1, String userId2, boolean isFollowing, String password) {
 		Log.info(() -> format("follow : userId1 = %s, userId2 = %s, isFollowing = %s, pwd = %s\n", userId1, userId2, isFollowing, password));
 
 		Result<Void> res = null;
 		if(isPostgree){
-			res = errorOrResult( okUser(userId1, password, hasCache), user -> {
+			res = errorOrResult( okUser(userId1, password), user -> {
 				var f = new Following(userId1, userId2);
-				return errorOrVoid( okUser( userId2, hasCache), isFollowing ? DB.insertOne( f ) : DB.deleteOne( f ));
+				return errorOrVoid( okUser( userId2), isFollowing ? DB.insertOne( f ) : DB.deleteOne( f ));
 			});
 		}else{
-			res = errorOrResult( okUser(userId1, password, hasCache), user -> {
+			res = errorOrResult( okUser(userId1, password), user -> {
 				var f = new Following(userId1, userId2);
-				return errorOrVoid( okUser( userId2, hasCache), isFollowing ? cosmos.insertOne( f , followingContainer) : cosmos.deleteOne( f , followingContainer));
+				return errorOrVoid( okUser( userId2), isFollowing ? cosmos.insertOne( f , followingContainer) : cosmos.deleteOne( f , followingContainer));
 			});
 		}
 		
@@ -382,11 +383,11 @@ public class JavaShorts implements Shorts {
 					if(isPostgree){
 						Log.info(() -> format("\n\nFOLLOW: LISTA DE FOLLOWERS NÃO EXISTE %s\n\n", userId1));
 						var query = format("SELECT f.follower FROM following f WHERE f.followee = '%s'", userId2);
-						followers = errorOrValue( okUser(userId2, password, hasCache), DB.sql(query, String.class)).value();
+						followers = errorOrValue( okUser(userId2, password), DB.sql(query, String.class)).value();
 						Log.info(() -> format("\n\nFOLLOW: LISTA DE FOLLOWERS NÃO EXISTE %s\n\n", followers));
 					}else{
 						var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId2);
-						List<Map> fList = errorOrValue( okUser(userId2, hasCache), cosmos.query(Map.class, query, followingContainer)).value();
+						List<Map> fList = errorOrValue( okUser(userId2), cosmos.query(Map.class, query, followingContainer)).value();
 						followers = fList.stream().map(result -> result.get("follower").toString()).toList();
 					}
 
@@ -406,7 +407,7 @@ public class JavaShorts implements Shorts {
 	}
 
 	@Override
-	public Result<List<String>> followers(String userId, String password, boolean hasCache) {
+	public Result<List<String>> followers(String userId, String password) {
 		Log.info(() -> format("followers : userId = %s, pwd = %s\n", userId, password));
 
 		if(hasCache) {
@@ -422,10 +423,10 @@ public class JavaShorts implements Shorts {
 				List<String> ids;
 				if(isPostgree){
 					var query = format("SELECT f.follower FROM following f WHERE f.followee = '%s'", userId);
-					 ids = errorOrValue( okUser(userId, password, true), DB.sql(query, String.class)).value();
+					 ids = errorOrValue( okUser(userId, password), DB.sql(query, String.class)).value();
 				}else{
 					var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);
-					Result<List<Map>> res = errorOrValue(okUser(userId, true), cosmos.query(Map.class, query, followingContainer));
+					Result<List<Map>> res = errorOrValue(okUser(userId), cosmos.query(Map.class, query, followingContainer));
 					ids = res.value().stream().map(result -> result.get("follower").toString()).toList();
 				}
 
@@ -438,10 +439,10 @@ public class JavaShorts implements Shorts {
 		}else {
 			if(isPostgree){
 				var query = format("SELECT f.follower FROM following f WHERE f.followee = '%s'", userId);
-				return errorOrValue( okUser(userId, password, false), DB.sql(query, String.class));
+				return errorOrValue( okUser(userId, password), DB.sql(query, String.class));
 			}else{
 				var query = format("SELECT f.follower FROM Following f WHERE f.followee = '%s'", userId);
-				Result<List<Map>> res = errorOrValue( okUser(userId, false), cosmos.query(Map.class, query, followingContainer));
+				Result<List<Map>> res = errorOrValue( okUser(userId), cosmos.query(Map.class, query, followingContainer));
 				List<String> ids = res.value().stream().map(result -> result.get("follower").toString()).toList();
 				return Result.ok(ids);
 			}
@@ -451,19 +452,19 @@ public class JavaShorts implements Shorts {
 	}
 
 	@Override
-	public Result<Void> like(String shortId, String userId, boolean isLiked, String password, boolean hasCache) {
+	public Result<Void> like(String shortId, String userId, boolean isLiked, String password) {
 		Log.info(() -> format("like : shortId = %s, userId = %s, isLiked = %s, pwd = %s\n", shortId, userId, isLiked, password));
 
 		Result<Void> res;
 		if(isPostgree){
-			res =  errorOrResult( getShort(shortId, hasCache), shrt -> {
+			res =  errorOrResult( getShort(shortId), shrt -> {
 				var l = new Likes(userId, shortId, shrt.getOwnerId());
-				return errorOrVoid( okUser( userId, password, hasCache), isLiked ? DB.insertOne( l ) : DB.deleteOne( l ));
+				return errorOrVoid( okUser( userId, password), isLiked ? DB.insertOne( l ) : DB.deleteOne( l ));
 			});
 		}else{
-			res = errorOrResult( getShort(shortId, hasCache), shrt -> {
+			res = errorOrResult( getShort(shortId), shrt -> {
 				var l = new Likes(userId, shortId, shrt.getOwnerId());
-				return errorOrVoid( okUser( userId, password, hasCache), isLiked ? cosmos.insertOne( l, likesContainer) : cosmos.deleteOne( l, likesContainer));
+				return errorOrVoid( okUser( userId, password), isLiked ? cosmos.insertOne( l, likesContainer) : cosmos.deleteOne( l, likesContainer));
 			});
 		}
 
@@ -534,7 +535,7 @@ public class JavaShorts implements Shorts {
 
 	//TODO VER ISTO COM O STOR
 	@Override
-	public Result<List<String>> likes(String shortId, String password, boolean hasCache) {
+	public Result<List<String>> likes(String shortId, String password) {
 		Log.info(() -> format("likes : shortId = %s, pwd = %s\n", shortId, password));
 
 		if(hasCache) {
@@ -550,7 +551,7 @@ public class JavaShorts implements Shorts {
 					);
 				}
 				//Log.info(() -> format("\n\nLIKES: LISTA DE LIKES NÃO EXISTE NA CACHE %s\n\n", shortId));
-				return errorOrResult(getShort(shortId, true), shrt -> {
+				return errorOrResult(getShort(shortId), shrt -> {
 
 					List<String> ids = getLikes(shortId, isPostgree);
 
@@ -563,14 +564,14 @@ public class JavaShorts implements Shorts {
 			}
 		}else{
 			if(isPostgree){
-				return errorOrResult( getShort(shortId, false), shrt -> {
+				return errorOrResult( getShort(shortId), shrt -> {
 
 					var query = format("SELECT l.userId FROM Likes l WHERE l.shortId = '%s'", shortId);
 
-					return errorOrValue( okUser( shrt.getOwnerId(), password , hasCache), DB.sql(query, String.class));
+					return errorOrValue( okUser( shrt.getOwnerId(), password), DB.sql(query, String.class));
 				});
 			}else {
-				return errorOrResult(getShort(shortId, false), shrt -> {
+				return errorOrResult(getShort(shortId), shrt -> {
 					var query = format("SELECT * FROM Likes l WHERE l.shortId = '%s'", shortId);
 					Result<List<Map>> res = cosmos.query(Map.class, query, likesContainer);
 					if(!res.isOK())
@@ -583,7 +584,7 @@ public class JavaShorts implements Shorts {
 	}
 
 	@Override
-	public Result<List<String>> getFeed(String userId, String password, boolean hasCache) {
+	public Result<List<String>> getFeed(String userId, String password) {
 		Log.info(() -> format("getFeed : userId = %s, pwd = %s\n", userId, password));
 
 		if(isPostgree){
@@ -598,7 +599,7 @@ public class JavaShorts implements Shorts {
 				WHERE f.follower = '%s' 
 				ORDER BY timestamp DESC""";
 
-			return errorOrValue( okUser( userId, password, hasCache), DB.sql( format(QUERY_FMT, userId, userId), String.class));
+			return errorOrValue( okUser( userId, password), DB.sql( format(QUERY_FMT, userId, userId), String.class));
 		}else{
 			final var FIRST_QUERY = format("SELECT s.id, s.timestamp FROM Short s WHERE	s.ownerId = '%s'", userId);
 			List<Map> queryRes1 = cosmos.query(Map.class, FIRST_QUERY, shortsContainer).value();
@@ -640,12 +641,12 @@ public class JavaShorts implements Shorts {
 		}
 	}
 		
-	protected Result<User> okUser( String userId, String pwd, boolean hasCache) {
-		return JavaUsers.getInstance().getUser(userId, pwd, hasCache);
+	protected Result<User> okUser( String userId, String pwd) {
+		return JavaUsers.getInstance().getUser(userId, pwd);
 	}
 	
-	private Result<Void> okUser( String userId , boolean hasCache) {
-		var res = okUser( userId, "", hasCache);
+	private Result<Void> okUser( String userId) {
+		var res = okUser( userId, "");
 		//Log.info(()->String.format("\n\nERROR OK USER: %s\n\n", res.error().toString()));
 		if( res.error() == FORBIDDEN )
 			return ok();
@@ -654,7 +655,7 @@ public class JavaShorts implements Shorts {
 	}
 	
 	@Override
-	public Result<Void> deleteAllShorts(String userId, String password, String token, boolean hasCache) {
+	public Result<Void> deleteAllShorts(String userId, String password, String token) {
 		Log.info(() -> format("deleteAllShorts : userId = %s, password = %s, token = %s\n", userId, password, token));
 
 		if( ! Token.isValid( token, userId ) )

@@ -6,11 +6,19 @@ import static tukano.api.Result.error;
 import static tukano.api.Result.ErrorCode.FORBIDDEN;
 import static tukano.api.Result.errorOrResult;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Blob;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import com.azure.core.http.rest.PagedIterable;
 import com.azure.core.util.BinaryData;
@@ -32,6 +40,7 @@ public class JavaBlobs implements Blobs {
 	private static Blobs instance;
 	private static Logger Log = Logger.getLogger(JavaBlobs.class.getName());
 	private static final String storageConnectionString = Props.get("BlobStoreConnection", "");
+	private static List<String> storageConnStrings;
 	private BlobContainerClient containerClient;
 
 	public String baseURI;
@@ -51,6 +60,9 @@ public class JavaBlobs implements Blobs {
 				.connectionString(storageConnectionString)
 				.containerName(Blobs.NAME)
 				.buildClient();
+
+		Log.info(() -> String.format("\n\n%s\n\n", storageConnectionString));
+
 	}
 	
 	@Override

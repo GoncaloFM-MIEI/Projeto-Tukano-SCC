@@ -47,19 +47,19 @@ public class Test {
 		//TODO Shorts operations test
 		Result<tukano.api.Short> s1, s2;
 
-		show(s2 = shorts.createShort("liskov", "54321", false));
-		show(s1 = shorts.createShort("wales", "12345", false));
-		show(shorts.createShort("wales", "12345", false));
-		show(shorts.createShort("wales", "12345", false));
-		show(shorts.createShort("wales", "12345", false));
+		show(s2 = shorts.createShort("liskov", "54321"));
+		show(s1 = shorts.createShort("wales", "12345"));
+		show(shorts.createShort("wales", "12345"));
+		show(shorts.createShort("wales", "12345"));
+		show(shorts.createShort("wales", "12345"));
 
 		var s1id = s1.value().getShortId();
 		var s2id = s2.value().getShortId();
-		show(shorts.getShort(s1id, false));
+		show(shorts.getShort(s1id));
 
 //		show(shorts.deleteShort(s2id, "54321"));
 
-		show(shorts.getShorts( "wales" , false));
+		show(shorts.getShorts( "wales"));
 
 
 //		var blobUrl = URI.create(s2.value().getBlobUrl());
@@ -89,16 +89,16 @@ public class Test {
 		
 //		var s2id = s2.value().getShortId();
 //
-		show(shorts.follow("liskov", "wales", true, "54321", false));
-		show(shorts.follow("wales", "liskov", true, "12345", false));
-		show(shorts.followers("wales", "12345", false));
+		show(shorts.follow("liskov", "wales", true, "54321"));
+		show(shorts.follow("wales", "liskov", true, "12345"));
+		show(shorts.followers("wales", "12345"));
 
-		show(shorts.like(s2id, "wales", true, "12345", false));
-		show(shorts.like(s2id, "liskov", true, "54321", false));
-		show(shorts.likes(s2id , "54321", false));
+		show(shorts.like(s2id, "wales", true, "12345"));
+		show(shorts.like(s2id, "liskov", true, "54321"));
+		show(shorts.likes(s2id , "54321"));
 
-		show(shorts.getShort(s2id, false));
-		show(shorts.getFeed("liskov", "12345", false));
+		show(shorts.getShort(s2id));
+		show(shorts.getFeed("liskov", "12345"));
 //		show(shorts.getShort( s2id ));
 //
 //

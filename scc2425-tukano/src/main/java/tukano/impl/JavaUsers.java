@@ -29,7 +29,8 @@ public class JavaUsers implements Users {
 
 	private static CosmosContainer usersContainer;
 
-	private static final boolean isPostgree = "yes".equalsIgnoreCase(Props.get("USE_POSTGREE", ""));
+	private static final boolean isPostgree = "true".equalsIgnoreCase(Props.get("USE_POSTGREE", ""));
+	private static final boolean hasCache = "true".equalsIgnoreCase(Props.get("HAS_CACHE", ""));
 	
 	synchronized public static Users getInstance() {
 		if( instance == null )
@@ -47,7 +48,7 @@ public class JavaUsers implements Users {
 
 
 	@Override
-	public Result<String> createUser(User user, boolean hasCache) {
+	public Result<String> createUser(User user) {
 		Log.info(() -> format("createUser : %s\n", user));
 
 		if( badUserInfo( user ) ) {
@@ -77,7 +78,7 @@ public class JavaUsers implements Users {
 	}
 
 	@Override
-	public Result<User> getUser(String userId, String pwd, boolean hasCache) {
+	public Result<User> getUser(String userId, String pwd) {
 		Log.info( () -> format("getUser : userId = %s, pwd = %s\n", userId, pwd));
 
 		if (userId == null)
@@ -138,7 +139,7 @@ public class JavaUsers implements Users {
 	}
 
 	@Override
-	public Result<User> updateUser(String userId, String pwd, User other, boolean hasCache) {
+	public Result<User> updateUser(String userId, String pwd, User other) {
 		Log.info(() -> format("updateUser : userId = %s, pwd = %s, user: %s\n", userId, pwd, other));
 
 		if (badUpdateUserInfo(userId, pwd, other))
@@ -204,7 +205,7 @@ public class JavaUsers implements Users {
 	}
 
 	@Override
-	public Result<User> deleteUser(String userId, String pwd, boolean hasCache) {
+	public Result<User> deleteUser(String userId, String pwd) {
 		Log.info(() -> format("deleteUser : userId = %s, pwd = %s\n", userId, pwd));
 
 		if (userId == null || pwd == null )
@@ -224,7 +225,7 @@ public class JavaUsers implements Users {
 			// Delete user shorts and related info asynchronously in a separate thread
 			Executors.defaultThreadFactory().newThread( () -> {
 				JavaBlobs.getInstance().deleteAllBlobs(userId, Token.get(userId));
-				JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId), hasCache);
+				JavaShorts.getInstance().deleteAllShorts(userId, pwd, Token.get(userId));
 			}).start();
 
 			if(isPostgree){
@@ -251,7 +252,7 @@ public class JavaUsers implements Users {
 
 	//TODO FAZ SENTIDO TER CACHE????
 	@Override
-	public Result<List<User>> searchUsers(String pattern, boolean hasCache) {
+	public Result<List<User>> searchUsers(String pattern) {
 		Log.info( () -> format("searchUsers : patterns = %s\n", pattern));
 
 		//TODO TEMOS MESMO QUE TER O .TOUPPSERCASE() no patter? Não funciona com ele :)

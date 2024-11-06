@@ -14,53 +14,53 @@ public class RestShortsResource extends RestResource implements RestShorts {
 	static final Shorts impl = JavaShorts.getInstance();
 		
 	@Override
-	public Short createShort(String userId, String password, boolean hasCache) {
-		return super.resultOrThrow( impl.createShort(userId, password, hasCache));
+	public Short createShort(String userId, String password) {
+		return super.resultOrThrow( impl.createShort(userId, password));
 	}
 
 	@Override
-	public void deleteShort(String shortId, String password, boolean hasCache) {
-		super.resultOrThrow( impl.deleteShort(shortId, password, hasCache));
+	public void deleteShort(String shortId, String password) {
+		super.resultOrThrow( impl.deleteShort(shortId, password));
 	}
 
 	@Override
-	public Short getShort(String shortId, boolean hasCache) {
-		return super.resultOrThrow( impl.getShort(shortId, hasCache));
+	public Short getShort(String shortId) {
+		return super.resultOrThrow( impl.getShort(shortId));
 	}
 	@Override
-	public List<String> getShorts(String userId, boolean hasCache) {
-		return super.resultOrThrow( impl.getShorts(userId, hasCache));
+	public List<String> getShorts(String userId) {
+		return super.resultOrThrow( impl.getShorts(userId));
 	}
 
 	@Override
-	public void follow(String userId1, String userId2, FollowRequest isFollowingC, String password, boolean hasCache) {
+	public void follow(String userId1, String userId2, FollowRequest isFollowingC, String password) {
 		boolean isFollowing = isFollowingC.isFollowing();
-		super.resultOrThrow( impl.follow(userId1, userId2, isFollowing, password, hasCache));
+		super.resultOrThrow( impl.follow(userId1, userId2, isFollowing, password));
 	}
 
 	@Override
-	public List<String> followers(String userId, String password, boolean hasCache) {
-		return super.resultOrThrow( impl.followers(userId, password, hasCache));
+	public List<String> followers(String userId, String password) {
+		return super.resultOrThrow( impl.followers(userId, password));
 	}
 
 	@Override
-	public void like(String shortId, String userId, LikeRequest isLikedC, String password, boolean hasCache) {
+	public void like(String shortId, String userId, LikeRequest isLikedC, String password) {
 		boolean isLiked = isLikedC.isLiked();
-		super.resultOrThrow( impl.like(shortId, userId, isLiked, password, hasCache));
+		super.resultOrThrow( impl.like(shortId, userId, isLiked, password));
 	}
 
 	@Override
-	public List<String> likes(String shortId, String password, boolean hasCache) {
-		return super.resultOrThrow( impl.likes(shortId, password, hasCache));
+	public List<String> likes(String shortId, String password) {
+		return super.resultOrThrow( impl.likes(shortId, password));
 	}
 
 	@Override
-	public List<String> getFeed(String userId, String password, boolean hasCache) {
-		return super.resultOrThrow( impl.getFeed(userId, password, hasCache));
+	public List<String> getFeed(String userId, String password) {
+		return super.resultOrThrow( impl.getFeed(userId, password));
 	}
 
 	@Override
-	public void deleteAllShorts(String userId, String password, String token, boolean hasCache) {
-		super.resultOrThrow( impl.deleteAllShorts(userId, password, token, hasCache));
+	public void deleteAllShorts(String userId, String password, String token) {
+		super.resultOrThrow( impl.deleteAllShorts(userId, password, token));
 	}	
 }
