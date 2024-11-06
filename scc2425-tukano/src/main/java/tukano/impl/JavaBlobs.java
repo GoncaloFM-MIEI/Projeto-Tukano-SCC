@@ -1,13 +1,14 @@
 package tukano.impl;
 
 import static java.lang.String.format;
-import static tukano.api.Result.ErrorCode.INTERNAL_ERROR;
+import static tukano.api.Result.ErrorCode.*;
 import static tukano.api.Result.error;
-import static tukano.api.Result.ErrorCode.FORBIDDEN;
 import static tukano.api.Result.errorOrResult;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,9 +40,8 @@ public class JavaBlobs implements Blobs {
 	
 	private static Blobs instance;
 	private static Logger Log = Logger.getLogger(JavaBlobs.class.getName());
-	private static final String storageConnectionString = Props.get("BlobStoreConnection", "");
-	private static List<String> storageConnStrings;
-	private BlobContainerClient containerClient;
+	private static List<String> storageConnStringsList;
+	private List<BlobContainerClient> containerClientList;
 
 	public String baseURI;
 	private BlobStorage storage;
@@ -56,13 +56,30 @@ public class JavaBlobs implements Blobs {
 		//storage = new FilesystemStorage();
 		//baseURI = String.format("%s/%s/", TukanoRestServer.serverURI, Blobs.NAME);
 		// Get container client
-		this.containerClient = new BlobContainerClientBuilder()
-				.connectionString(storageConnectionString)
-				.containerName(Blobs.NAME)
-				.buildClient();
+		storageConnStringsList = new ArrayList<>();
+		containerClientList = new ArrayList<>();
+		int i = 1;
+		while(i<3){
+			String propName = "BlobStoreConnection" + i;
+			String connString = Props.get(propName, "");
+			storageConnStringsList.add(connString);
+			Log.info(() -> String.format("\n\nRETRIEVED KEY %s: %s\n\n", propName, connString));
 
-		Log.info(() -> String.format("\n\n%s\n\n", storageConnectionString));
+			BlobContainerClient newClt = new BlobContainerClientBuilder()
+					.connectionString(storageConnStringsList.get(i-1))
+					.containerName(Blobs.NAME)
+					.buildClient();
+			containerClientList.add(newClt);
+			i++;
+		}
 
+		for(int j = 1; j <= storageConnStringsList.size(); j++){
+			String msg1 = String.format("\n\nNEW KEY: %s", storageConnStringsList.get(j-1));
+			String msg2 = String.format("\n\nCONTAINER NAME: %s\n\n", containerClientList.get(j-1).getBlobContainerName());
+			Log.info(() -> msg1);
+			Log.info(() -> msg2);
+
+		}
 	}
 	
 	@Override
@@ -76,11 +93,14 @@ public class JavaBlobs implements Blobs {
 
 			BinaryData data = BinaryData.fromBytes(bytes);
 
-			// Get client to blob
-			BlobClient blob = containerClient.getBlobClient(toPath(blobId));
+			for(BlobContainerClient clt : containerClientList){
+				// Get client to blob
+				BlobClient blob = clt.getBlobClient(toPath(blobId));
 
-			// Upload contents from BinaryData (check documentation for other alternatives)
-			blob.upload(data);
+				// Upload contents from BinaryData (check documentation for other alternatives)
+				blob.upload(data);
+			}
+
 
 			return Result.ok();
 
@@ -99,22 +119,26 @@ public class JavaBlobs implements Blobs {
 		if( ! validBlobId( blobId, token ) )
 			return error(FORBIDDEN);
 
-		try {
-			// Get client to blob
-			BlobClient blob = containerClient.getBlobClient( toPath(blobId));
+		for (int i = 0; i < containerClientList.size(); i++) {
+			try {
+				// Get client to blob
+				BlobContainerClient clt = containerClientList.get(i);
+				BlobClient blob = clt.getBlobClient(toPath(blobId));
 
-			// Download contents to BinaryData (check documentation for other alternatives)
-			BinaryData data = blob.downloadContent();
+				// Download contents to BinaryData (check documentation for other alternatives)
+				BinaryData data = blob.downloadContent();
 
-			byte[] arr = data.toBytes();
+				byte[] arr = data.toBytes();
 
-			System.out.println( "Blob size : " + arr.length);
+				System.out.println("Blob size : " + arr.length);
+				return Result.ok(arr);
 
-			return Result.ok(arr);
-		} catch( Exception e) {
-			e.printStackTrace();
-			return Result.error(INTERNAL_ERROR);
+			} catch(Exception e){
+				e.printStackTrace();
+				return Result.error(INTERNAL_ERROR);
+			}
 		}
+		return Result.error(NOT_FOUND);
 	}
 
 	@Override
@@ -135,11 +159,12 @@ public class JavaBlobs implements Blobs {
 			return error(FORBIDDEN);
 
 		try {
-			// Get client to blob
-			BlobClient blob = containerClient.getBlobClient(toPath(blobId));
+			for(BlobContainerClient clt : containerClientList) {
+				// Get client to blob
+				BlobClient blob = clt.getBlobClient(toPath(blobId));
 
-			blob.delete();
-
+				blob.delete();
+			}
 			return Result.ok();
 		} catch( Exception e) {
 			e.printStackTrace();
@@ -156,19 +181,20 @@ public class JavaBlobs implements Blobs {
 			return error(FORBIDDEN);
 		}
 		try {
-			// Get client to blob
-			List<BlobItem> it = containerClient.listBlobs().stream().toList();
+			for(BlobContainerClient clt : containerClientList) {
+				// Get client to blob
+				List<BlobItem> it = clt.listBlobs().stream().toList();
 
-			Log.info(() -> format(String.valueOf(it.size())));
+				Log.info(() -> format(String.valueOf(it.size())));
 
-			for(BlobItem b : it){
-				Log.info(() -> format("TAMOS NO FOR"));
-				BlobClient blob = containerClient.getBlobClient(b.getName());
+				for (BlobItem b : it) {
+					Log.info(() -> format("TAMOS NO FOR"));
+					BlobClient blob = clt.getBlobClient(b.getName());
 
-				if(b.getName().contains(userId))
-					blob.delete();
+					if (b.getName().contains(userId))
+						blob.delete();
+				}
 			}
-
 			//blob.delete();
 
 			return Result.ok();

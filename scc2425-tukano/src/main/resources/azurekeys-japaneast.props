@@ -1,5 +1,5 @@
 # Date : 05/11/24, 23:42
-BlobStoreConnection=DefaultEndpointsProtocol=https;AccountName=stormggfmjapaneast;AccountKey=DlcghyIrTBbkadE1XjMY/vh3kK0vkOginycecZW9s+XSZdAVyx/64Sebc6WCq9KtZd8wEA4yw9an+AStl8gHyQ==;EndpointSuffix=core.windows.net
+BlobStoreConnection1=DefaultEndpointsProtocol=https;AccountName=stormggfmjapaneast;AccountKey=DlcghyIrTBbkadE1XjMY/vh3kK0vkOginycecZW9s+XSZdAVyx/64Sebc6WCq9KtZd8wEA4yw9an+AStl8gHyQ==;EndpointSuffix=core.windows.net
 COSMOSDB_KEY=KM5716jOfTdFHEfPUtB4EsPM3kF0xVe8VaSPv6jSldkbl37bw13NRaawIUDX3zjGAOFIePAl2r4KACDbKBbXFQ==
 COSMOSDB_URL=https://cosmosrmggfm.documents.azure.com:443/
 COSMOSDB_DATABASE=cosmosdbrmggfm
