@@ -6,4 +6,4 @@ BLOB_URL=https://tukano60333-60532.azurewebsites.net/rest
 # to use postgree/cache write "true" on either prop, anything else is going to be NoSQL/no cache.
 # To configure PostgreeSQL put connection URL and Login in hibernate.cfg.xml
 USE_POSTGREE=
-HAS_CACHE=true
+HAS_CACHE=false

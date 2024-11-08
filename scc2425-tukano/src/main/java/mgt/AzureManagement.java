@@ -58,7 +58,7 @@ public class AzureManagement {
 	static final String[] BLOB_CONTAINERS = { "blobs" };	// TODO: Containers to add to the blob storage
 
 	static final Region[] REGIONS = new Region[] { Region.EUROPE_NORTH, Region.JAPAN_EAST}; // Define the regions to deploy resources here
-	
+	static int regionsCounter = 1;
 	// Name of resource group for each region
 	static final String[] AZURE_RG_REGIONS = Arrays.stream(REGIONS)
 			.map(reg -> "rg" + MY_ID + "-" + reg.name() ).toArray(String[]::new);
@@ -83,7 +83,7 @@ public class AzureManagement {
 
 	// Name of property file with keys and URLS to access resources
 	static final String[] AZURE_PROPS_LOCATIONS = Arrays.stream(REGIONS)
-			.map(reg -> "azurekeys-" + reg.name() + ".props").toArray(String[]::new);
+			.map(reg -> "src/main/resources/azurekeys-" + reg.name() + ".props").toArray(String[]::new);
 	
 	// Name of shell script file with commands to set application setting for you application server
 	// and Azure functions
@@ -157,8 +157,9 @@ public class AzureManagement {
 		}
 
 		synchronized (AzureManagement.class) {
-			Files.write(Paths.get(propFilename), ("BlobStoreConnection=" + key + "\n").getBytes(),
+			Files.write(Paths.get(propFilename), ("BlobStoreConnection" + regionsCounter + "=" + key + "\n").getBytes(),
 					StandardOpenOption.APPEND);
+			regionsCounter++;
 		}
 		StringBuffer cmd = new StringBuffer();
 		if (functionName != null) {
