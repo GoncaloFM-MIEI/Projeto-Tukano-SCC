@@ -52,22 +52,22 @@ scenarios:
             pwd: "easypass"
             email: "smd@gmail.com"
             displayName: "SergioD"
-      - loop:
-        - post:
-            url: /users
-            headers:
-              Content-Type: application/json
-              Accept: application/json
-            afterResponse: "printStatus"
-            beforeRequest: "uploadUserWithCount"
-        count: 10
-      - loop:
-          - function: "incrementCounter"
-          - get:
-              url: "/users/name{{ counter }}?pwd=easypass"
-              afterResponse: "printStatus"
-              beforeRequest: "incrementCounter"
-        count: 10
+#      - loop:
+#        - post:
+#            url: /users
+#            headers:
+#              Content-Type: application/json
+#              Accept: application/json
+#            afterResponse: "printStatus"
+#            beforeRequest: "uploadUserWithCount"
+#        count: 10
+#      - loop:
+#          - function: "incrementCounter"
+#          - get:
+#              url: "/users/name{{ counter }}?pwd=easypass"
+#              afterResponse: "printStatus"
+#              beforeRequest: "incrementCounter"
+#        count: 10
       #User gets
       - loop:
         - get:
