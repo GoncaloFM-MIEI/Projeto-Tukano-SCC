@@ -7,7 +7,9 @@ module.exports = {
   printStatus: printStatus,
   uploadRandomizedUser,
   processRegisterReply,
-  uploadUserWithCount
+  uploadUserWithCount,
+  resetCount,
+  incrementCounter
 }
 
 
@@ -104,6 +106,19 @@ function uploadUserWithCount(requestParams, context, ee, next){
         displayName: username
     };
     requestParams.body = JSON.stringify(user);
+    return next();
+}
+
+function resetCount(requestParams, context, ee, next) {
+    userNameCount = 0;
+}
+
+function incrementCounter(requestParams, context, ee, next){
+    if(!context.counter) {
+        context.counter = 0;
+    }else{
+        context.counter += 1;
+    }
     return next();
 }
 

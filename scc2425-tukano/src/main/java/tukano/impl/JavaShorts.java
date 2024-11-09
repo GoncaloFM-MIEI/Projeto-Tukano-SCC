@@ -108,10 +108,10 @@ public class JavaShorts implements Shorts {
 
 						//get the userShorts from the DB
 						if(isPostgree){
-							var query = format("SELECT s.id FROM short s WHERE s.ownerId = '%s'", userId);
+							var query = format("SELECT s.id FROM shorts s WHERE s.ownerId = '%s'", userId);
 							userShorts =  DB.sql( query, Map.class);
 						}else{
-							var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
+							var query = format("SELECT s.id FROM shorts s WHERE s.ownerId = '%s'", userId);
 							userShorts =  cosmos.query(Map.class, query, shortsContainer).value();
 						}
 
@@ -320,10 +320,10 @@ public class JavaShorts implements Shorts {
 				//Log.info(() -> format("\n\nGET SHORTS: USER SHORTS NÃO EXISTEM NA CACHE %s\n\n", userId));
 				List<String> ids;
 				if(isPostgree){
-					var query = format("SELECT s.id FROM short s WHERE s.ownerId = '%s'", userId);
+					var query = format("SELECT s.id FROM shorts s WHERE s.ownerId = '%s'", userId);
 					ids = errorOrValue( okUser(userId), DB.sql( query, String.class)).value();
 				}else{
-					var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
+					var query = format("SELECT s.id FROM shorts s WHERE s.ownerId = '%s'", userId);
 					List<Map> res = errorOrValue( okUser(userId), cosmos.query(Map.class, query, shortsContainer)).value();
 					ids = res.stream().map(result -> result.get("id").toString()).toList();
 				}
@@ -337,10 +337,10 @@ public class JavaShorts implements Shorts {
 			}
 		}else{
 			if(isPostgree){
-				var query = format("SELECT s.shortId FROM short s WHERE s.ownerId = '%s'", userId);
+				var query = format("SELECT s.shortId FROM shorts s WHERE s.ownerId = '%s'", userId);
 				return errorOrValue( okUser(userId), DB.sql( query, String.class));
 			}else{
-				var query = format("SELECT s.id FROM Short s WHERE s.ownerId = '%s'", userId);
+				var query = format("SELECT s.id FROM shorts s WHERE s.ownerId = '%s'", userId);
 				List<Map> res = errorOrValue( okUser(userId), cosmos.query(Map.class, query, shortsContainer)).value();
 				List<String> ids = res.stream().map(result -> result.get("id").toString()).toList();
 				return Result.ok(ids);
@@ -590,18 +590,18 @@ public class JavaShorts implements Shorts {
 		if(isPostgree){
 			final var QUERY_FMT = """
 				SELECT s.id, s.timestamp 
-				FROM Short s 
+				FROM shorts s 
 				WHERE s.ownerId = '%s'                
 				UNION            
 				SELECT s2.id, s2.timestamp 
-				FROM Short s2 
+				FROM shorts s2 
 				JOIN Following f ON f.followee = s2.ownerId 
 				WHERE f.follower = '%s' 
 				ORDER BY timestamp DESC""";
 
 			return errorOrValue( okUser( userId, password), DB.sql( format(QUERY_FMT, userId, userId), String.class));
 		}else{
-			final var FIRST_QUERY = format("SELECT s.id, s.timestamp FROM Short s WHERE	s.ownerId = '%s'", userId);
+			final var FIRST_QUERY = format("SELECT s.id, s.timestamp FROM shorts s WHERE s.ownerId = '%s'", userId);
 			List<Map> queryRes1 = cosmos.query(Map.class, FIRST_QUERY, shortsContainer).value();
 
 			List<Tuple<String, Long>> res1 = queryRes1.stream()
@@ -616,7 +616,7 @@ public class JavaShorts implements Shorts {
 			List<Tuple<String, Long>> resultTuples = new ArrayList<>();
 
 			for (String f : followees) {
-				String query = String.format("SELECT s.id, s.timestamp FROM Short s WHERE s.ownerId = '%s'", f);
+				String query = String.format("SELECT s.id, s.timestamp FROM shorts s WHERE s.ownerId = '%s'", f);
 				List<Map> queryResult = cosmos.query(Map.class, query, shortsContainer).value();
 
 				List<Tuple<String, Long>> tuples = queryResult.stream()
@@ -675,7 +675,7 @@ public class JavaShorts implements Shorts {
 					try (Jedis jedis = RedisCache.getCachePool().getResource()) {
 						Pipeline pipe = jedis.pipelined();
 
-						var query1Select = format("SELECT s.id FROM shorts WHERE s.ownerId = '%s'", userId);
+						var query1Select = format("SELECT s.id FROM shorts s WHERE s.ownerId = '%s'", userId);
 						List<String> res1 = DB.sql(query1Select, String.class);
 						for (String s : res1) {
 							var key = SHORT_LIKES_LIST_PREFIX + s;
@@ -719,7 +719,7 @@ public class JavaShorts implements Shorts {
 			}else{
 				//delete shorts
 				//var query1 = format("DELETE Short s WHERE s.ownerId = '%s'", userId);
-				var query1 = format("SELECT * FROM Short s WHERE s.ownerId = '%s'", userId);
+				var query1 = format("SELECT * FROM shorts s WHERE s.ownerId = '%s'", userId);
 				List<Short> shorts = cosmos.query(Short.class, query1, shortsContainer).value();
 				for(Short s : shorts){
 					cosmos.deleteOne(s, shortsContainer);
