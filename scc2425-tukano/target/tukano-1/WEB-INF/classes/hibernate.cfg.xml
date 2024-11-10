@@ -2,7 +2,7 @@
 <hibernate-configuration>
 	<session-factory>
 		<!-- JDBC Database connection settings -->
-		<property name="connection.url">jdbc:postgresql://c-scc60333.5tvga6qv5kdwjf.postgres.cosmos.azure.com:5432/citus?sslmode=require</property>
+		<property name="connection.url">jdbc:postgresql://c-scc60333.d5kuzvv2j7fmbg.postgres.cosmos.azure.com:5432/citus?sslmode=require</property>
 		<property name="connection.username">citus</property>
 		<property name="connection.password">scc60333.</property>
 		<!-- JDBC connection pool settings ... using built-in test pool -->
